@@ -9,7 +9,7 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
                line_width=None, alpha=1, arrow_size=7, minlength=0.1, 
                start_points=None, maxlength=4.0, integration_direction='both',
                x_axis_label='x', y_axis_label='y', plot_width=300,
-               plot_height=260, **kwargs):
+               plot_height=260, arrow_level='underlay', **kwargs):
     """Draws streamlines of a vector flow.
 
     Parameters
@@ -50,6 +50,8 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
         Width of plot. Ignore if `p` is not None.
     *plot_height* : int, default 260
         Width of plot. Ignore if `p` is not None.
+    *arrow_level* : str
+        Either 'underlay' or 'overlay'.
 
     Returns
     -------
@@ -92,7 +94,8 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
                                         end=bokeh.models.NormalHead(
                                             fill_color='thistle', 
                                             line_alpha=0,
-                                            size=7),
+                                            size=7,
+                                            level=arrow_level),
                                         x_start=tail[0],
                                         y_start=tail[1],
                                         x_end=head[0],
