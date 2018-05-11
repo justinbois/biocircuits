@@ -64,8 +64,8 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
                                   plot_height=plot_height,
                                   x_axis_label=x_axis_label,
                                   y_axis_label=y_axis_label,
-                                  x_range=bokeh.models.Range1d(x[0], x[1]),
-                                  y_range=bokeh.models.Range1d(y[0], y[1]),
+                                  x_range=bokeh.models.Range1d(x[0], x[-1]),
+                                  y_range=bokeh.models.Range1d(y[0], y[-1]),
                                   **kwargs)
 
     if line_width is None:
