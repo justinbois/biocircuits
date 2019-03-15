@@ -1,4 +1,4 @@
-# bi1x
+# be150
 
 Utilities Caltech BE 150: Design Principles of Genetic Circuits
 
