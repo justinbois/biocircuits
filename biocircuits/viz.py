@@ -101,6 +101,7 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
     handler = bokeh.application.handlers.FunctionHandler(_plot_app)
     return bokeh.application.Application(handler)
 
+
 def streamplot(x, y, u, v, p=None, density=1, color=None,
                line_width=None, alpha=1, arrow_size=7, minlength=0.1, 
                start_points=None, maxlength=4.0, integration_direction='both',
