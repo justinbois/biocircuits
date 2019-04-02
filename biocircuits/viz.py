@@ -5,6 +5,102 @@ import matplotlib.streamplot
 import bokeh.models
 import bokeh.plotting
 
+def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
+                        extra_args):
+    """
+    Create an interactive x-y plot in Bokeh.
+
+    Parameters
+    ----------
+    base_plot : function
+        A function to generate the initial plot that will be 
+        interactive. It must have call signature 
+        `base_plot(callback, sliders, toggles, extra_args))`, with the
+        following arguments.
+          callback:   A function to update the data source of the plot,
+                      described as the `callback` argument below.
+          sliders:    A tuple of `bokeh.models.Slider` objects. 
+                      Alternatively, can be any object reference-able 
+                      like `sliders[0].start`, `sliders[0].value`, etc.
+          toggles:    A tuple of `bokeh.models.Toggle` objects.
+                      Alternatively, can be any object reference-able 
+                      like `toggles[0].active`.
+          extra_args: Tuple of any extra arguments that are passed to
+                      the `callback` function.
+        The `base_plot` function must return a Bokeh Figure instance and
+        a Bokeh ColumnDataSource.
+    callback : function
+        A function that is executed to update the `ColumnDataSource` of
+        the interactive plot whenever a slider or toggle are updated.
+        It must have a call signature 
+        `callback(source, x_range, sliders, toggles, *extra_args)`.
+        Here, `source` is a `ColumnDataSource`, and `x_range` is the 
+        x_range of the plot. `sliders`, `toggles`, and `extra_args` are
+        as defined above.
+    slider_params : tuple of objects
+        Each object in the tuple is an instance of a class that has the
+        following attributes.
+            title : The name of the slider.
+            start : The smallest value of the slider.
+            end : The largest value of the slider.
+            value : The starting value of the slider.
+            step : The step size of the slider as it is moved.
+    toggle_params : tuple of objects
+        Each object in the tuple is an instance of a class that has the
+        following attributes.
+            title : The name of the toggle.
+            active : A Boolean saying whether the toggle is active.
+    extra_args : Tuple of any extra arguments that are passed to the
+        `callback` function.
+
+    Returns
+    -------
+    output : Bokeh application
+        A Bokeh application with sliders, toggles, and a plot.
+    """
+    def _plot_app(doc):
+        # Build the initial plot and data source
+        p, source = base_plot(callback, slider_params, toggle_params, extra_args)
+        p.x_range.range_padding = 0
+        p.y_range.range_padding = 0
+        
+        # Callbacks
+        def _callback(attr, old, new):
+            callback(source, p.x_range, p.y_range, sliders, toggles, 
+                     *extra_args)
+
+        # Callback for the toggle with required call signature
+        def _callback_toggle(new):
+            _callback(None, None, new)
+                
+        # Set up sliders
+        sliders = tuple(bokeh.models.Slider(start=param.start,
+                                       end=param.end,
+                                       value=param.value,
+                                       step=param.step,
+                                       title=param.title)
+                            for param in slider_params)
+        for slider in sliders:
+            slider.on_change('value', _callback)
+
+        # Set up toggles
+        toggles = tuple(bokeh.models.Toggle(label=param.title) for param in toggle_params)
+        for toggle in toggles:
+            toggle.on_click(_callback_toggle)
+            
+        # Execute callback upon changing axis values
+        p.x_range.on_change('start', _callback)
+        p.x_range.on_change('end', _callback)
+        p.y_range.on_change('start', _callback)
+        p.y_range.on_change('end', _callback)
+        
+        # Add the plot to the app
+        widgets = bokeh.layouts.widgetbox(*sliders, *toggles)
+        doc.add_root(bokeh.layouts.column(widgets, p))
+
+    handler = bokeh.application.handlers.FunctionHandler(_plot_app)
+    return bokeh.application.Application(handler)
+
 def streamplot(x, y, u, v, p=None, density=1, color=None,
                line_width=None, alpha=1, arrow_size=7, minlength=0.1, 
                start_points=None, maxlength=4.0, integration_direction='both',

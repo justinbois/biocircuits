@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 here = path.abspath(path.dirname(__file__))
 
@@ -18,12 +18,12 @@ install_requires = [x.strip() for x in all_reqs if 'git+' not in x]
 dependency_links = [x.strip().replace('git+', '') for x in all_reqs if x.startswith('git+')]
 
 setup(
-    name='be150',
+    name='biocircuits',
     version=__version__,
     description='Python utilities for the Caltech course BE 150: Design Principles of Genetic Circuits',
     long_description=long_description,
-    url='https://github.com/justinbois/be150',
-    download_url='https://github.com/justinbois/be150/tarball/' + __version__,
+    url='https://github.com/justinbois/biocircuits',
+    download_url='https://github.com/justinbois/biocircuits/tarball/' + __version__,
     license='BSD',
     classifiers=[
       'Development Status :: 3 - Alpha',
