@@ -2,6 +2,9 @@ import numpy as np
 
 import matplotlib.streamplot
 
+import bokeh.application
+import bokeh.application.handlers
+import bokeh.layouts
 import bokeh.models
 import bokeh.plotting
 
@@ -13,17 +16,17 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
     Parameters
     ----------
     base_plot : function
-        A function to generate the initial plot that will be 
-        interactive. It must have call signature 
+        A function to generate the initial plot that will be
+        interactive. It must have call signature
         `base_plot(callback, sliders, toggles, extra_args))`, with the
         following arguments.
           callback:   A function to update the data source of the plot,
                       described as the `callback` argument below.
-          sliders:    A tuple of `bokeh.models.Slider` objects. 
-                      Alternatively, can be any object reference-able 
+          sliders:    A tuple of `bokeh.models.Slider` objects.
+                      Alternatively, can be any object reference-able
                       like `sliders[0].start`, `sliders[0].value`, etc.
           toggles:    A tuple of `bokeh.models.Toggle` objects.
-                      Alternatively, can be any object reference-able 
+                      Alternatively, can be any object reference-able
                       like `toggles[0].active`.
           extra_args: Tuple of any extra arguments that are passed to
                       the `callback` function.
@@ -32,9 +35,9 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
     callback : function
         A function that is executed to update the `ColumnDataSource` of
         the interactive plot whenever a slider or toggle are updated.
-        It must have a call signature 
+        It must have a call signature
         `callback(source, x_range, sliders, toggles, *extra_args)`.
-        Here, `source` is a `ColumnDataSource`, and `x_range` is the 
+        Here, `source` is a `ColumnDataSource`, and `x_range` is the
         x_range of the plot. `sliders`, `toggles`, and `extra_args` are
         as defined above.
     slider_params : tuple of objects
@@ -61,18 +64,30 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
     def _plot_app(doc):
         # Build the initial plot and data source
         p, source = base_plot(callback, slider_params, toggle_params, extra_args)
+
+        # Make sure axis ranges have no padding
+        if type(p.x_range) == bokeh.models.ranges.Range1d:
+            start, end = p.x_range.start, p.x_range.end
+            p.x_range = bokeh.models.ranges.DataRange1d(p.x_range)
+            p.x_range.start = start
+            p.x_range.end = end
+        if type(p.y_range) == bokeh.models.ranges.Range1d:
+            start, end = p.y_range.start, p.y_range.end
+            p.y_range = bokeh.models.ranges.DataRange1d(p.y_range)
+            p.y_range.start = start
+            p.y_range.end = end
         p.x_range.range_padding = 0
         p.y_range.range_padding = 0
-        
+
         # Callbacks
         def _callback(attr, old, new):
-            callback(source, p.x_range, p.y_range, sliders, toggles, 
+            callback(source, p.x_range, p.y_range, sliders, toggles,
                      *extra_args)
 
         # Callback for the toggle with required call signature
         def _callback_toggle(new):
             _callback(None, None, new)
-                
+
         # Set up sliders
         sliders = tuple(bokeh.models.Slider(start=param.start,
                                        end=param.end,
@@ -87,13 +102,13 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
         toggles = tuple(bokeh.models.Toggle(label=param.title) for param in toggle_params)
         for toggle in toggles:
             toggle.on_click(_callback_toggle)
-            
+
         # Execute callback upon changing axis values
         p.x_range.on_change('start', _callback)
         p.x_range.on_change('end', _callback)
         p.y_range.on_change('start', _callback)
         p.y_range.on_change('end', _callback)
-        
+
         # Add the plot to the app
         widgets = bokeh.layouts.widgetbox(*sliders, *toggles)
         doc.add_root(bokeh.layouts.column(widgets, p))
@@ -103,7 +118,7 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
 
 
 def streamplot(x, y, u, v, p=None, density=1, color=None,
-               line_width=None, alpha=1, arrow_size=7, minlength=0.1, 
+               line_width=None, alpha=1, arrow_size=7, minlength=0.1,
                start_points=None, maxlength=4.0, integration_direction='both',
                x_axis_label='x', y_axis_label='y', plot_width=300,
                plot_height=260, arrow_level='underlay', **kwargs):
@@ -179,17 +194,17 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
                 minlength=minlength, start_points=start_points,
                 maxlength=maxlength,
                 integration_direction=integration_direction)
- 
+
     p.multi_line(xs,
                  ys,
-                 color=color, 
-                 line_width=line_widths, 
+                 color=color,
+                 line_width=line_widths,
                  line_alpha=alpha)
 
     for tail, head in zip(arrowtails, arrowheads):
         p.add_layout(bokeh.models.Arrow(line_alpha=0,
                                         end=bokeh.models.NormalHead(
-                                            fill_color='thistle', 
+                                            fill_color='thistle',
                                             line_alpha=0,
                                             size=7,
                                             level=arrow_level),
@@ -197,7 +212,7 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
                                         y_start=tail[1],
                                         x_end=head[0],
                                         y_end=head[1]))
-    
+
     return p
 
 

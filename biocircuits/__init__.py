@@ -4,7 +4,8 @@
 
 __all__ = ['viz', 'utils']
 
-from . import *
+from .viz import *
+from .utils import *
 
 __author__ = """Justin Bois"""
 __email__ = 'bois@caltech.edu'
