@@ -36,9 +36,10 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
         A function that is executed to update the `ColumnDataSource` of
         the interactive plot whenever a slider or toggle are updated.
         It must have a call signature
-        `callback(source, x_range, sliders, toggles, *extra_args)`.
-        Here, `source` is a `ColumnDataSource`, and `x_range` is the
-        x_range of the plot. `sliders`, `toggles`, and `extra_args` are
+        `callback(source, x_range, y_range, sliders, toggles, *extra_args)`.
+        Here, `source` is a `ColumnDataSource`, `x_range` is the
+        x_range of the plot, and `y_range` is the y_range of the plot. 
+        `sliders`, `toggles`, and `extra_args` are
         as defined above.
     slider_params : tuple of objects
         Each object in the tuple is an instance of a class that has the
@@ -108,6 +109,9 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
         p.x_range.on_change('end', _callback)
         p.y_range.on_change('start', _callback)
         p.y_range.on_change('end', _callback)
+
+        # Call the callback once, to kick things off
+        callback(source, p.x_range, p.y_range, sliders, toggles, *extra_args)
 
         # Add the plot to the app
         widgets = bokeh.layouts.widgetbox(*sliders, *toggles)
