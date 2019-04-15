@@ -8,8 +8,8 @@ import bokeh.layouts
 import bokeh.models
 import bokeh.plotting
 
-def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
-                        extra_args):
+def interactive_xy_plot(base_plot, callback, slider_params=(), 
+                        toggle_params=(), extra_args=()):
     """
     Create an interactive x-y plot in Bokeh.
 
@@ -36,11 +36,12 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
         A function that is executed to update the `ColumnDataSource` of
         the interactive plot whenever a slider or toggle are updated.
         It must have a call signature
-        `callback(source, x_range, sliders, toggles, *extra_args)`.
-        Here, `source` is a `ColumnDataSource`, and `x_range` is the
-        x_range of the plot. `sliders`, `toggles`, and `extra_args` are
-        as defined above.
-    slider_params : tuple of objects
+        `callback(source, x_range, y_range, sliders, toggles, 
+                  *extra_args)`.
+        Here, `source` is a `ColumnDataSource`, `x_range` is the
+        x_range of the plot, and `y_range` is the y_range for the plot.
+        `sliders`, `toggles`, and `extra_args` are as defined above.
+    slider_params : tuple of objects, default empty tuple
         Each object in the tuple is an instance of a class that has the
         following attributes.
             title : The name of the slider.
@@ -48,12 +49,13 @@ def interactive_xy_plot(base_plot, callback, slider_params, toggle_params,
             end : The largest value of the slider.
             value : The starting value of the slider.
             step : The step size of the slider as it is moved.
-    toggle_params : tuple of objects
+    toggle_params : tuple of objects, default empty tuple
         Each object in the tuple is an instance of a class that has the
         following attributes.
             title : The name of the toggle.
             active : A Boolean saying whether the toggle is active.
-    extra_args : Tuple of any extra arguments that are passed to the
+    extra_args : tuple, default empty tuple
+        Tuple of any extra arguments that are passed to the
         `callback` function.
 
     Returns
