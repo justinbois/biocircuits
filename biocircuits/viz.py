@@ -8,7 +8,142 @@ import bokeh.layouts
 import bokeh.models
 import bokeh.plotting
 
-def interactive_xy_plot(base_plot, callback, slider_params=(), 
+from . import utils
+
+def _ecdf_vals(data, formal=False, complementary=False):
+    """Get x, y, values of an ECDF for plotting.
+    Parameters
+    ----------
+    data : ndarray
+        One dimensional Numpy array with data.
+    formal : bool, default False
+        If True, generate x and y values for formal ECDF (staircase). If
+        False, generate x and y values for ECDF as dots.
+    complementary : bool
+        If True, return values for ECCDF.
+    Returns
+    -------
+    x : ndarray
+        x-values for plot
+    y : ndarray
+        y-values for plot
+    """
+    x = np.sort(data)
+    y = np.arange(1, len(data)+1) / len(data)
+
+    if formal:
+        x, y = _to_formal(x, y)
+        if complementary:
+            y = 1 - y
+    elif complementary:
+        y = 1 - y + 1/len(y)
+
+    return x, y
+
+
+def ecdf(data=None, conf_int=False, ptiles=[2.5, 97.5], n_bs_reps=1000,
+         fill_color='lightgray', fill_alpha=1, p=None, x_axis_label=None,
+         y_axis_label='ECDF', title=None, plot_height=300, plot_width=450,
+         formal=False, complementary=False, x_axis_type='linear',
+         y_axis_type='linear', **kwargs):
+    """
+    Create a plot of an ECDF.
+    Parameters
+    ----------
+    data : array_like
+        One-dimensional array of data. Nan's are ignored.
+    conf_int : bool, default False
+        If True, display a confidence interval on the ECDF.
+    ptiles : list, default [2.5, 97.5]
+        The percentiles to use for the confidence interval. Ignored it
+        `conf_int` is False.
+    n_bs_reps : int, default 1000
+        Number of bootstrap replicates to do to compute confidence
+        interval. Ignored if `conf_int` is False.
+    fill_color : str, default 'lightgray'
+        Color of the confidence interbal. Ignored if `conf_int` is
+        False.
+    fill_alpha : float, default 1
+        Opacity of confidence interval. Ignored if `conf_int` is False.
+    p : bokeh.plotting.Figure instance, or None (default)
+        If None, create a new figure. Otherwise, populate the existing
+        figure `p`.
+    x_axis_label : str, default None
+        Label for the x-axis. Ignored if `p` is not None.
+    y_axis_label : str, default 'ECDF'
+        Label for the y-axis. Ignored if `p` is not None.
+    title : str, default None
+        Title of the plot. Ignored if `p` is not None.
+    plot_height : int, default 300
+        Height of plot, in pixels. Ignored if `p` is not None.
+    plot_width : int, default 450
+        Width of plot, in pixels. Ignored if `p` is not None.
+    formal : bool, default False
+        If True, make a plot of a formal ECDF (staircase). If False,
+        plot the ECDF as dots.
+    complementary : bool, default False
+        If True, plot the empirical complementary cumulative
+        distribution functon.
+    x_axis_type : str, default 'linear'
+        Either 'linear' or 'log'.
+    y_axis_type : str, default 'linear'
+        Either 'linear' or 'log'.
+    kwargs
+        Any kwargs to be passed to either p.circle or p.line, for
+        `formal` being False or True, respectively.
+    Returns
+    -------
+    output : bokeh.plotting.Figure instance
+        Plot populated with ECDF.
+    """
+    # Check data to make sure legit
+    data = utils._convert_data(data)
+
+    # Data points on ECDF
+    x, y = _ecdf_vals(data, formal, complementary)
+
+    # Instantiate Bokeh plot if not already passed in
+    if p is None:
+        p = bokeh.plotting.figure(
+            plot_height=plot_height, plot_width=plot_width,
+            x_axis_label=x_axis_label, y_axis_label=y_axis_label,
+            x_axis_type=x_axis_type, y_axis_type=y_axis_type, title=title)
+
+    # Do bootstrap replicates
+    if conf_int:
+        x_plot = np.sort(np.unique(x))
+        bs_reps = np.array([_ecdf_arbitrary_points(
+                            np.random.choice(data, size=len(data)), x_plot)
+                                for _ in range(n_bs_reps)])
+
+        # Compute the confidence intervals
+        ecdf_low, ecdf_high = np.percentile(np.array(bs_reps), ptiles, axis=0)
+
+        # Make them formal
+        _, ecdf_low = _to_formal(x=x_plot, y=ecdf_low)
+        x_plot, ecdf_high = _to_formal(x=x_plot, y=ecdf_high)
+
+        p = fill_between(x1=x_plot, y1=ecdf_low, x2=x_plot, y2=ecdf_high,
+                         fill_color=fill_color, show_line=False, p=p)
+
+    if formal:
+        # Line of steps
+        p.line(x, y, **kwargs)
+
+        # Rays for ends
+        if complementary:
+            p.ray(x[0], 1, None, np.pi, **kwargs)
+            p.ray(x[-1], 0, None, 0, **kwargs)
+        else:
+            p.ray(x[0], 0, None, np.pi, **kwargs)
+            p.ray(x[-1], 1, None, 0, **kwargs)
+    else:
+        p.circle(x, y, **kwargs)
+
+    return p
+
+
+def interactive_xy_plot(base_plot, callback, slider_params=(),
                         toggle_params=(), extra_args=()):
     """
     Create an interactive x-y plot in Bokeh.
@@ -36,7 +171,7 @@ def interactive_xy_plot(base_plot, callback, slider_params=(),
         A function that is executed to update the `ColumnDataSource` of
         the interactive plot whenever a slider or toggle are updated.
         It must have a call signature
-        `callback(source, x_range, y_range, sliders, toggles, 
+        `callback(source, x_range, y_range, sliders, toggles,
                   *extra_args)`.
         Here, `source` is a `ColumnDataSource`, `x_range` is the
         x_range of the plot, and `y_range` is the y_range for the plot.
