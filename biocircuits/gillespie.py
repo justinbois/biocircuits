@@ -121,6 +121,16 @@ def _gillespie_ssa(propensity_func, update, population_0,
         Entry i, j, k is the count of chemical species k at time
         time_points[j] for trajectory i.
     """
+    # Make sure input population has correct dimensions
+    if update.shape[1] != len(population_0):
+        raise RuntimeError(
+            'Number of rows in `update` must equal length of `population_0.')
+    if (update.shape[0]
+            != len(propensity_func(population_0, time_points[0], *args))):
+        raise RuntimeError(
+            'The number of columns in `update` must equal the number of'
+            + ' propensities returned by `propensity_func()`.')
+
     # Build trajectory function based on if propensity function is jitted
     if type(propensity_func) == numba.targets.registry.CPUDispatcher:
         @numba.njit

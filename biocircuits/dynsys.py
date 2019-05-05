@@ -77,7 +77,7 @@ def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
     
     # Integrate subsequent steps
     j = 1
-    while t_step[-1] < t[-1] and j < 100:
+    while t_step[-1] < t[-1]:
         # Make B-spline
         tck = [scipy.interpolate.splrep(t_step, y[:,i]) for i in range(n)]
             
@@ -99,7 +99,7 @@ def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
     # Concatenate results from steps
     y_dense = np.concatenate(y_dense)
     t_dense = np.concatenate(t_dense)
-    
+
     # Interpolate solution for returning
     y_return = np.empty((len(t), n))
     for i in range(n):
