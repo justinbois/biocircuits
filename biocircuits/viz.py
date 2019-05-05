@@ -254,53 +254,118 @@ def interactive_xy_plot(base_plot, callback, slider_params=(),
     return bokeh.application.Application(handler)
 
 
-def streamplot(x, y, u, v, p=None, density=1, color=None,
-               line_width=None, alpha=1, arrow_size=7, minlength=0.1,
-               start_points=None, maxlength=4.0, integration_direction='both',
-               x_axis_label='x', y_axis_label='y', plot_width=300,
-               plot_height=260, arrow_level='underlay', **kwargs):
+def phase_portrait(du_dt, dv_dt, u_range, v_range, args_u=(), args_v=(),
+                   log=False, p=None, **kwargs):
+    """
+    Plots the phase portrait for a 2D dynamical system in the u-v plane.
+
+    Parameters
+    ----------
+    du_dt : function
+        A function to compute the right hand side of du/dt. Must have
+        call signature `du_dt(u, v, *args_u)`. Note that there can be
+        no explicit time dependence.
+    dv_dt : function
+        A function to compute the right hand side of dv/dt. Must have
+        call signature `dv_dt(u, v, *args_v)`. Note that there can be
+        no explicit time dependence.
+    u_range : array_like, shape (2,)
+        Minimum and maximum values of u to consider.
+    v_range : array_like, shape (2,)
+        Minimum and maximum values of v to consider.
+    args_u : tuple, default ()
+        Tuple of extra arguments to be passed to `du_dt`.
+    args_v : tuple, default ()
+        Tuple of extra arguments to be passed to `dv_dt`.
+    log : bool, default False
+        If True, plot u and v on a logarithmic scale.
+    p : bokeh.plotting.Figure instance, default None
+        Figure to use for the phase portrait. If None, a new one is
+        created according to `streamplot()`.
+    kwargs :
+        All other kwargs are passed to `streamplot`.
+
+    Returns
+    -------
+    output : bokeh.plotting.Figure instance populated with streamplot
+    """
+    if log:
+        # Set up u,v space
+        log_u = np.linspace(np.log10(u_range[0]), np.log10(u_range[1]), 100)
+        log_v = np.linspace(np.log10(v_range[0]), np.log10(v_range[1]), 100)
+        log_uu, log_vv = np.meshgrid(log_u, log_v)
+
+        # Compute derivatives
+        log_u_vel = du_dt(10**log_uu, 10**log_vv, *args_u) / 10**log_uu
+        log_v_vel = dv_dt(10**log_uu, 10**log_vv, *args_v) / 10**log_vv
+
+        # Make stream plot
+        return streamplot(log_u, log_v, log_u_vel, log_v_vel, p=p, **kwargs)
+    else:
+        # Set up u,v space
+        u = np.linspace(u_range[0], u_range[1], 100)
+        v = np.linspace(v_range[0], v_range[1], 100)
+        uu, vv = np.meshgrid(u, v)
+
+        # Compute derivatives
+        u_vel = du_dt(uu, vv, params)
+        v_vel = dv_dt(uu, vv, params)
+
+        # Make stream plot
+        return streamplot(u, v, u_vel, v_vel, p=p, **kwargs)
+
+
+def streamplot(x, y, u, v, p=None, density=1, color='#1f77b4',
+               line_width=None, alpha=1, arrow_size=7, min_length=0.1,
+               start_points=None, max_length=4.0,
+               integration_direction='both', x_axis_label='x',
+               y_axis_label='y', plot_width=300, plot_height=260,
+               arrow_level='underlay', **kwargs):
     """Draws streamlines of a vector flow.
 
     Parameters
     ----------
-    *x*, *y* : 1d arrays
-        an *evenly spaced* grid.
-    *u*, *v* : 2d arrays
+    x, y : 1d arrays
+        an evenly spaced grid.
+    u, v : 2d arrays
         x and y-velocities. Number of rows should match length of y, and
         the number of columns should match x.
-    *p* : bokeh.plotting.Figure instance, default None
+    p : bokeh.plotting.Figure instance, default None
         Figure to populate with glyphs. If None, create a new figure.
-    *density* : float or 2-tuple
+    density : float or 2-tuple
         Controls the closeness of streamlines. When `density = 1`, the domain
-        is divided into a 30x30 grid---*density* linearly scales this grid.
+        is divided into a 30x30 grid---density linearly scales this grid.
         Each cell in the grid can have, at most, one traversing streamline.
         For different densities in each direction, use [density_x, density_y].
-    *color* : matplotlib color code, or 2d array
+    color : str or 2d array, default '#1f77b4' (Bokeh default color)
         Streamline color. When given an array with the same shape as
-        velocities, *color* values are converted to colors using *cmap*.
-    *linewidth* : numeric or 2d array, default None
+        velocities, color values are converted to colors using cmap.
+    line_width : numeric or 2d array, default None
         vary linewidth when given a 2d array with the same shape as velocities. If None, scale linewidth with speed.
-    *arrowsize* : float
+    arrow_size : float
         Factor scale arrow size.
-    *minlength* : float
+    min_length : float
         Minimum length of streamline in axes coordinates.
-    *start_points*: Nx2 array
+    start_points: Nx2 array
         Coordinates of starting points for the streamlines.
         In data coordinates, the same as the ``x`` and ``y`` arrays.
-    *maxlength* : float
+    max_length : float
         Maximum length of streamline in axes coordinates.
-    *integration_direction* : ['forward', 'backward', 'both']
+    integration_direction : ['forward', 'backward', 'both']
         Integrate the streamline in forward, backward or both directions.
-    *x_axis_label* : str, default 'x'
+    x_axis_label : str, default 'x'
         Label for x-axis. Ignored if `p` is not None.
-    *y_axis_label* : str, default 'y'
+    y_axis_label : str, default 'y'
         Label for y-axis. Ignored if `p` is not None.
-    *plot_width* : int, default 300
+    plot_width : int, default 300
         Width of plot. Ignore if `p` is not None.
-    *plot_height* : int, default 260
+    plot_height : int, default 260
         Width of plot. Ignore if `p` is not None.
-    *arrow_level* : str
+    arrow_level : str
         Either 'underlay' or 'overlay'.
+    kwargs :
+        All other kwargs are passed to bokeh.plotting.figure() when
+        generating the figure.
 
     Returns
     -------
@@ -328,8 +393,8 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
 
     xs, ys, line_widths, arrowtails, arrowheads = _streamlines(
                 x, y, u, v, density=density, line_width=line_width,
-                minlength=minlength, start_points=start_points,
-                maxlength=maxlength,
+                min_length=min_length, start_points=start_points,
+                max_length=max_length,
                 integration_direction=integration_direction)
 
     p.multi_line(xs,
@@ -341,7 +406,7 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
     for tail, head in zip(arrowtails, arrowheads):
         p.add_layout(bokeh.models.Arrow(line_alpha=0,
                                         end=bokeh.models.NormalHead(
-                                            fill_color='thistle',
+                                            fill_color=color,
                                             line_alpha=0,
                                             size=7,
                                             level=arrow_level),
@@ -354,8 +419,8 @@ def streamplot(x, y, u, v, p=None, density=1, color=None,
 
 
 def _streamlines(x, y, u, v, density=1, line_width=1,
-               minlength=0.1, start_points=None,
-               maxlength=4.0, integration_direction='both'):
+               min_length=0.1, start_points=None,
+               max_length=4.0, integration_direction='both'):
     """Gives specs for streamlines of a vector flow."""
     grid = matplotlib.streamplot.Grid(x, y)
     mask = matplotlib.streamplot.StreamMask(density)
@@ -368,7 +433,7 @@ def _streamlines(x, y, u, v, density=1, line_width=1,
         raise ValueError(errstr)
 
     if integration_direction == 'both':
-        maxlength /= 2.
+        max_length /= 2.
 
     if isinstance(line_width, np.ndarray):
         if line_width.shape != grid.shape:
@@ -387,7 +452,7 @@ def _streamlines(x, y, u, v, density=1, line_width=1,
     v = np.ma.masked_invalid(v)
 
     integrate = matplotlib.streamplot.get_integrator(
-                        u, v, dmap, minlength, maxlength,
+                        u, v, dmap, min_length, max_length,
                         integration_direction)
 
     trajectories = []
