@@ -41,6 +41,24 @@ def _ecdf_vals(data, formal=False, complementary=False):
     return x, y
 
 
+def _to_formal(x, y):
+    """Convert to formal ECDF."""
+    # Set up output arrays
+    x_formal = np.empty(2*len(x))
+    y_formal = np.empty(2*len(x))
+
+    # y-values for steps
+    y_formal[0] = 0
+    y_formal[1::2] = y
+    y_formal[2::2] = y[:-1]
+
+    # x- values for steps
+    x_formal[::2] = x
+    x_formal[1::2] = x
+
+    return x_formal, y_formal
+
+
 def ecdf(data=None, conf_int=False, ptiles=[2.5, 97.5], n_bs_reps=1000,
          fill_color='lightgray', fill_alpha=1, p=None, x_axis_label=None,
          y_axis_label='ECDF', title=None, plot_height=300, plot_width=450,
