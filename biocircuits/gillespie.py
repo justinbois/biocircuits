@@ -31,27 +31,34 @@ def _draw_time(props_sum):
     return np.random.exponential(1 / props_sum)
 
 
-def _gillespie_draw(propensity_func, population, t, args):
+def _gillespie_draw(propensity_func, propensities, population, t, args):
     """
     Draws a reaction and the time it took to do that reaction.
     """
-    # Compute propensities
-    props = propensity_func(population, t, *args)
+    # Update propensities
+    propensity_func(propensities, population, t, *args)
 
     # Sum of propensities
-    props_sum = _sum(props)
+    props_sum = _sum(propensities)
 
     # Compute time
     time = _draw_time(props_sum)
 
     # Draw reaction given propensities
-    rxn = _sample_discrete(props, props_sum)
+    rxn = _sample_discrete(propensities, props_sum)
 
     return rxn, time
 
 
 def _gillespie_trajectory(propensity_func, update, population_0,
                           time_points, draw_fun, args=()):
+    # Number of species
+    n_species = update.shape[1]
+
+    @numba.njit
+    def _copy_population(population_previous, population):
+        for i in range(n_species):
+            population_previous[i] = population[i]
 
     # Initialize output
     pop_out = np.empty((len(time_points), update.shape[1]), dtype=np.int64)
@@ -61,14 +68,17 @@ def _gillespie_trajectory(propensity_func, update, population_0,
     j = 0
     t = time_points[0]
     population = population_0.copy()
+    population_previous = population_0.copy()
     pop_out[0, :] = population
+    propensities = np.zeros(update.shape[0])
     while j < len(time_points):
         while t < time_points[j_time]:
             # draw the event and time step
-            event, dt = draw_fun(propensity_func, population, t, args)
+            event, dt = draw_fun(propensity_func, propensities, 
+                                 population, t, args)
 
             # Update the population
-            population_previous = population.copy()
+            _copy_population(population_previous, population)
             population += update[event,:]
 
             # Increment time
@@ -96,9 +106,11 @@ def _gillespie_ssa(propensity_func, update, population_0,
     Parameters
     ----------
     propensity_func : function
-        Function with call signature `f(population, t, *args) that takes
-        the current population of particle counts and return an array of
-        propensities for each reaction.
+        Function with call signature 
+        `propensity_func(propensities, population, t, *args) that takes
+        the current propensities and population of particle counts and 
+        updates the propensities for each reaction. It does not return 
+        anything.
     update : ndarray, shape (num_reactions, num_chemical_species)
         Entry i, j gives the change in particle counts of species j
         for chemical reaction i.
@@ -121,34 +133,38 @@ def _gillespie_ssa(propensity_func, update, population_0,
         Entry i, j, k is the count of chemical species k at time
         time_points[j] for trajectory i.
     """
+    # Get number of species
+    n_species = update.shape[1]
+
     # Make sure input population has correct dimensions
-    if update.shape[1] != len(population_0):
+    if n_species != len(population_0):
         raise RuntimeError(
             'Number of rows in `update` must equal length of `population_0.')
-    if (update.shape[0]
-            != len(propensity_func(population_0, time_points[0], *args))):
-        raise RuntimeError(
-            'The number of columns in `update` must equal the number of'
-            + ' propensities returned by `propensity_func()`.')
+
+    @numba.njit
+    def _copy_population(population_previous, population):
+        for i in range(n_species):
+            population_previous[i] = population[i]
 
     # Build trajectory function based on if propensity function is jitted
     if type(propensity_func) == numba.targets.registry.CPUDispatcher:
+
         @numba.njit
-        def _draw(population, t):
+        def _draw(propensities, population, t):
             """
             Draws a reaction and the time it took to do that reaction.
             """
             # Compute propensities
-            props = propensity_func(population, t, *args)
+            propensity_func(propensities, population, t, *args)
 
             # Sum of propensities
-            props_sum = np.sum(props)
+            props_sum = np.sum(propensities)
 
             # Compute time
             time = np.random.exponential(1 / props_sum)
 
             # Draw reaction given propensities
-            rxn = _sample_discrete(props, props_sum)
+            rxn = _sample_discrete(propensities, props_sum)
 
             return rxn, time
 
@@ -163,14 +179,16 @@ def _gillespie_ssa(propensity_func, update, population_0,
             j = 0
             t = time_points[0]
             population = population_0.copy()
+            population_previous = population_0.copy()
             pop_out[0, :] = population
+            propensities = np.zeros(update.shape[0])
             while j < len(time_points):
                 while t < time_points[j_time]:
                     # draw the event and time step
-                    event, dt = _draw(population, t)
+                    event, dt = _draw(propensities, population, t)
 
                     # Update the population
-                    population_previous = population.copy()
+                    _copy_population(population_previous, population)
                     population += update[event,:]
 
                     # Increment time
@@ -232,9 +250,11 @@ def gillespie_ssa(propensity_func, update, population_0,
     Parameters
     ----------
     propensity_func : function
-        Function with call signature `f(population, t, *args) that takes
-        the current population of particle counts and return an array of
-        propensities for each reaction.
+        Function with call signature 
+        `propensity_func(propensities, population, t, *args) that takes
+        the current propensities and population of particle counts and 
+        updates the propensities for each reaction. It does not return 
+        anything.
     update : ndarray, shape (num_reactions, num_chemical_species)
         Entry i, j gives the change in particle counts of species j
         for chemical reaction i.
