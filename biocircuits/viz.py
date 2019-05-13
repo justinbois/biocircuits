@@ -326,8 +326,8 @@ def phase_portrait(du_dt, dv_dt, u_range, v_range, args_u=(), args_v=(),
         uu, vv = np.meshgrid(u, v)
 
         # Compute derivatives
-        u_vel = du_dt(uu, vv, params)
-        v_vel = dv_dt(uu, vv, params)
+        u_vel = du_dt(uu, vv, *args_u)
+        v_vel = dv_dt(uu, vv, *args_v)
 
         # Make stream plot
         return streamplot(u, v, u_vel, v_vel, p=p, **kwargs)
