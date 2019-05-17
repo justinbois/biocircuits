@@ -12,4 +12,4 @@ from .gillespie import *
 
 __author__ = """Justin Bois"""
 __email__ = 'bois@caltech.edu'
-__version__ = '0.0.10'
+__version__ = '0.0.11'

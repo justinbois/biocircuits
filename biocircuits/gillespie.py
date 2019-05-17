@@ -6,6 +6,7 @@ import numba
 
 try:
     import tqdm
+
     has_tqdm = True
 except:
     has_tqdm = False
@@ -52,8 +53,9 @@ def _gillespie_draw(propensity_func, propensities, population, t, args):
     return rxn, time
 
 
-def _gillespie_trajectory(propensity_func, update, population_0,
-                          time_points, draw_fun, args=()):
+def _gillespie_trajectory(
+    propensity_func, update, population_0, time_points, draw_fun, args=()
+):
     # Number of species
     n_species = update.shape[1]
 
@@ -76,12 +78,11 @@ def _gillespie_trajectory(propensity_func, update, population_0,
     while j < len(time_points):
         while t < time_points[j_time]:
             # draw the event and time step
-            event, dt = draw_fun(propensity_func, propensities, 
-                                 population, t, args)
+            event, dt = draw_fun(propensity_func, propensities, population, t, args)
 
             # Update the population
             _copy_population(population_previous, population)
-            population += update[event,:]
+            population += update[event, :]
 
             # Increment time
             t += dt
@@ -91,7 +92,7 @@ def _gillespie_trajectory(propensity_func, update, population_0,
 
         # Update the population
         for k in np.arange(j_time, min(j, len(time_points))):
-            pop_out[k,:] = population_previous
+            pop_out[k, :] = population_previous
 
         # Increment index
         j_time = j
@@ -100,11 +101,12 @@ def _gillespie_trajectory(propensity_func, update, population_0,
 
 
 @numba.njit
-def _gillespie_trajectory_report_time_points(propensity_func, update, 
-                        population_0, time_points, draw_fun, args=()):
+def _gillespie_trajectory_report_time_points(
+    propensity_func, update, population_0, time_points, draw_fun, args=()
+):
     # Number of iterations before concatenating arrays
     n_iter = 1000
-    
+
     # Initialize arrays for storing trajectories
     pop = np.empty((n_iter, update.shape[1]), dtype=np.int64)
     tp = np.empty(n_iter, dtype=np.float64)
@@ -120,12 +122,11 @@ def _gillespie_trajectory_report_time_points(propensity_func, update,
         i = 0
         while i < n_iter and t < time_points[-1]:
             # draw the event and time step
-            event, dt = draw_fun(propensity_func, propensities, 
-                                 population, t, args)
+            event, dt = draw_fun(propensity_func, propensities, population, t, args)
 
             # Update the population
-            population += update[event,:]
-            pop[i,:] = population
+            population += update[event, :]
+            pop[i, :] = population
 
             # Increment time
             t += dt
@@ -134,20 +135,27 @@ def _gillespie_trajectory_report_time_points(propensity_func, update,
             # Increment indexes
             i += 1
             j += 1
-        
+
         # Add this subtrajectory to output
         pop_out = np.concatenate((pop_out, pop))
         time_points_out = np.concatenate((time_points_out, tp))
-         
+
         # Reset index
         i = 0
 
     return pop_out[:j, :], time_points_out[:j]
 
 
-def _gillespie_ssa(propensity_func, update, population_0,
-                   time_points, return_time_points=False, size=1, 
-                   args=(), progress_bar=False):
+def _gillespie_ssa(
+    propensity_func,
+    update,
+    population_0,
+    time_points,
+    return_time_points=False,
+    size=1,
+    args=(),
+    progress_bar=False,
+):
     """
     Uses the Gillespie stochastic simulation algorithm to sample
     from probability distribution of particle counts over time.
@@ -191,7 +199,8 @@ def _gillespie_ssa(propensity_func, update, population_0,
     # Make sure input population has correct dimensions
     if n_species != len(population_0):
         raise RuntimeError(
-            'Number of rows in `update` must equal length of `population_0.')
+            "Number of rows in `update` must equal length of `population_0."
+        )
 
     @numba.njit
     def _copy_population(population_previous, population):
@@ -221,11 +230,12 @@ def _gillespie_ssa(propensity_func, update, population_0,
             return rxn, time
 
         if return_time_points:
+
             @numba.njit
             def _traj():
                 # Number of iterations before concatenating arrays
                 n_iter = 1000
-                
+
                 # Initialize arrays for storing trajectories
                 pop = np.empty((n_iter, update.shape[1]), dtype=np.int64)
                 tp = np.empty(n_iter, dtype=np.float64)
@@ -244,8 +254,8 @@ def _gillespie_ssa(propensity_func, update, population_0,
                         event, dt = _draw(propensities, population, t)
 
                         # Update the population
-                        population += update[event,:]
-                        pop[i,:] = population
+                        population += update[event, :]
+                        pop[i, :] = population
 
                         # Increment time
                         t += dt
@@ -254,21 +264,22 @@ def _gillespie_ssa(propensity_func, update, population_0,
                         # Increment indexes
                         i += 1
                         j += 1
-                    
+
                     # Add this subtrajectory to output
                     pop_out = np.concatenate((pop_out, pop))
                     time_points_out = np.concatenate((time_points_out, tp))
-                     
+
                     # Reset index
                     i = 0
-        
+
                 return pop_out[:j, :], time_points_out[:j]
+
         else:
+
             @numba.njit
             def _traj():
                 # Initialize output
-                pop_out = np.empty((len(time_points), update.shape[1]),
-                                   dtype=np.int64)
+                pop_out = np.empty((len(time_points), update.shape[1]), dtype=np.int64)
 
                 # Initialize and perform simulation
                 j_time = 1
@@ -285,7 +296,7 @@ def _gillespie_ssa(propensity_func, update, population_0,
 
                         # Update the population
                         _copy_population(population_previous, population)
-                        population += update[event,:]
+                        population += update[event, :]
 
                         # Increment time
                         t += dt
@@ -295,40 +306,57 @@ def _gillespie_ssa(propensity_func, update, population_0,
 
                     # Update the population
                     for k in np.arange(j_time, min(j, len(time_points))):
-                        pop_out[k,:] = population_previous
+                        pop_out[k, :] = population_previous
 
                     # Increment index
                     j_time = j
 
                 return pop_out, None
+
     else:
         if return_time_points:
+
             def traj():
-                return _gillespie_trajectory_report_time_points(propensity_func, update, population_0, time_points,
-                    _gillespie_draw, args=args)
+                return _gillespie_trajectory_report_time_points(
+                    propensity_func,
+                    update,
+                    population_0,
+                    time_points,
+                    _gillespie_draw,
+                    args=args,
+                )
+
         else:
+
             def _traj():
-                return _gillespie_trajectory(propensity_func, update,
-                                             population_0, time_points,
-                                             _gillespie_draw, args=args)
+                return _gillespie_trajectory(
+                    propensity_func,
+                    update,
+                    population_0,
+                    time_points,
+                    _gillespie_draw,
+                    args=args,
+                )
 
     # Initialize output
-    pop_out = [np.empty((len(time_points), update.shape[1]),
-                       dtype=np.int64) for _ in range(size)]
+    pop_out = [
+        np.empty((len(time_points), update.shape[1]), dtype=np.int64)
+        for _ in range(size)
+    ]
     t_out = [None for _ in range(size)]
 
     # Show progress bar
     iterator = range(size)
-    if progress_bar == 'notebook':
+    if progress_bar == "notebook":
         if has_tqdm:
             iterator = tqdm.tqdm_notebook(range(size))
         else:
-            warning.warn('tqdm not installed; skipping progress bar.')
+            warning.warn("tqdm not installed; skipping progress bar.")
     elif progress_bar:
         if has_tqdm:
             iterator = tqdm.tqdm(range(size))
         else:
-            warning.warn('tqdm not installed; skipping progress bar.')
+            warning.warn("tqdm not installed; skipping progress bar.")
 
     # Perform the simulations
     for i in iterator:
@@ -342,9 +370,17 @@ def _gillespie_multi_fn(args):
     return _gillespie_ssa(*args)
 
 
-def gillespie_ssa(propensity_func, update, population_0,
-                  time_points, return_time_points=False, size=1, 
-                  args=(), n_threads=1, progress_bar=False):
+def gillespie_ssa(
+    propensity_func,
+    update,
+    population_0,
+    time_points,
+    return_time_points=False,
+    size=1,
+    args=(),
+    n_threads=1,
+    progress_bar=False,
+):
     """
     Uses the Gillespie stochastic simulation algorithm to sample
     from probability distribution of particle counts over time.
@@ -394,37 +430,50 @@ def gillespie_ssa(propensity_func, update, population_0,
     """
     # Check inputs
     if type(args) != tuple:
-        raise RuntimeError('`args` must be a tuple, not ' + str(type(args)))
+        raise RuntimeError("`args` must be a tuple, not " + str(type(args)))
     population_0 = population_0.astype(int)
     update = update.astype(int)
     time_points = np.array(time_points, dtype=float)
 
     if len(time_points) == 2 and not return_time_points:
-        warnings.warn('`return_time_points` is False, and you only have two time points inputted.')
+        warnings.warn(
+            "`return_time_points` is False, and you only have two time points inputted."
+        )
 
     if n_threads == 1:
-        pop, time =  _gillespie_ssa(propensity_func, update, population_0,
-                    time_points, return_time_points=return_time_points,
-                      size=size, args=args,
-                      progress_bar=progress_bar)
+        pop, time = _gillespie_ssa(
+            propensity_func,
+            update,
+            population_0,
+            time_points,
+            return_time_points=return_time_points,
+            size=size,
+            args=args,
+            progress_bar=progress_bar,
+        )
         if return_time_points:
             return pop, time
         else:
             return np.concatenate(pop, axis=0)
     else:
-        input_args = (propensity_func, update, population_0,
-                      time_points, return_time_points, size, args,
-                      progress_bar)
+        input_args = (
+            propensity_func,
+            update,
+            population_0,
+            time_points,
+            return_time_points,
+            size,
+            args,
+            progress_bar,
+        )
 
         with multiprocessing.Pool(n_threads) as p:
-            results = p.map(_gillespie_multi_fn, [input_args]*n_threads)
+            results = p.map(_gillespie_multi_fn, [input_args] * n_threads)
 
-        pops = [results[i][0][k] 
-                    for i in range(n_threads) for k in range(size)]
+        pops = [results[i][0][k] for i in range(n_threads) for k in range(size)]
 
         if return_time_points:
-            times = [results[i][1][k] 
-                    for i in range(n_threads) for k in range(size)]
+            times = [results[i][1][k] for i in range(n_threads) for k in range(size)]
 
             return pops, times
         else:
