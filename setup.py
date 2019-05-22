@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-__version__ = '0.0.12'
+__version__ = '0.0.13'
 
 here = path.abspath(path.dirname(__file__))
 

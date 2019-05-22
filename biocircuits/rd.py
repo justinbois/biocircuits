@@ -111,7 +111,8 @@ def rd_solve(c_0_tuple, t, L=1, derivs_0=0, derivs_L=0, diff_coeff_fun=None,
         derivs_L[i] is the value of dc_i/dx at x = L, the rightmost
         boundary of the domain of x.
     diff_coeff_fun : function
-        Function of the form diff_coeff_fun(c_tuple, t, *diff_coeff_params).
+        Function of the form
+        diff_coeff_fun(c_tuple, t, x, *diff_coeff_params).
         Returns an tuple where entry i is a NumPy array containing
         the diffusion coefficient of species i at the grid points.
         c_tuple[i] is a NumPy array containing the concentrations of
@@ -178,3 +179,10 @@ def rd_solve(c_0_tuple, t, L=1, derivs_0=0, derivs_L=0, diff_coeff_fun=None,
                    rtol=rtol, atol=atol)
 
     return tuple([c[:,i::n_species] for i in range(n_species)])
+
+
+def constant_diff_coeffs(c_tuple, t, x, diff_coeffs):
+    """Function for use with `rd_solve()` for constant diffusion
+    coefficients."""
+    n = len(c_tuple[0])
+    return tuple([diff_coeffs[i] * np.ones(n) for i in range(len(c_tuple))])

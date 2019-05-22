@@ -6,6 +6,7 @@ import bokeh.application
 import bokeh.application.handlers
 import bokeh.layouts
 import bokeh.models
+import bokeh.palettes
 import bokeh.plotting
 
 from . import utils
@@ -270,6 +271,123 @@ def interactive_xy_plot(base_plot, callback, slider_params=(),
 
     handler = bokeh.application.handlers.FunctionHandler(_plot_app)
     return bokeh.application.Application(handler)
+
+
+def rd_plot(conc, t, L=1, normalize=False, legend_names=None, x_axis_label='x',
+            y_axis_label=None, plot_width=500,
+            plot_height=300,
+            palette=bokeh.palettes.d3['Category10'][10],
+            **kwargs):
+    """Create an interactive plot some the output of `rd_solve()`.
+
+    Parameters
+    ----------
+    conc : tuple of 2D Numpy arrays
+        Concentration of species. `conc[i][j, k]` is the concentration
+        of species i at time point j and position k.
+    t : Numpy array
+        Time points of the solutions.
+    L : float, default 1
+        Length of the domain.
+    normalize : bool, default False
+        If True, construct the plot such the maximal concentration each
+        species reaches is one. If False, use absolution levels of the
+        concentrations.
+    legend_names : list or None, default None
+        Names of the chemical species.
+    x_axis_label : str, default 'x'
+        Label for x-axis of plot
+    y_axis_label : str, default None
+        Label for y-axis of plot. If None and `normalize` is True, then
+        'normalized concentration'. If `normalize` is False, then
+        'concenatration'.
+    plot_width : int, default 500
+        Width of the plot.
+    plot_heigth : int, default 300
+        Height of the plot.
+    palette : List of colors default bokeh.palettes.d3['Category10'][10]
+        Color palette to use for chemical species.
+    kwargs :
+        All other kwargs are passed to bokeh.plotting.figure() in
+        creating the figure.
+
+    Returns
+    -------
+    output
+        An interactive plot app with the concentrations plotted with a
+        time slider.
+    """
+
+    if y_axis_label is None:
+        if normalize:
+            y_axis_label = 'normalized concentration'
+        else:
+            y_axis_label = 'concentration'
+
+    if len(conc) > 10:
+        raise RuntimeError('Can only handle ten species.')
+    slider_params = (utils.AttributeContainer(title='t', start=t[0],
+                                              end=t[-1], value=t[0],
+                                              step=np.diff(t).mean()),)
+
+    x = np.linspace(0, L, len(conc[0][0,:]))
+    extra_args = (x, conc)
+
+    if legend_names is None:
+        legend_names = [None for _ in range(len(conc))]
+    elif len(legend_names) != len(conc):
+        raise RuntimeError('len(legend_names) must equal len(conc).')
+
+    def _rd_callback(source, x_range, y_range, sliders, toggles, x, conc):
+        # Get index of time point
+        t_point = sliders[0].value
+        i = np.searchsorted(t, t_point)
+
+        # Update source
+        source.data['x'] = x
+        if normalize:
+            conc_max = [c.max() for c in conc]
+        else:
+            conc_max = np.ones(len(conc))
+        for j, c in enumerate(conc):
+            source.data['conc_'+str(j)] = c[i,:] / conc_max[j]
+
+
+    def _rd_plot(callback, sliders, toggles, extra_args):
+        # Determine y-range
+        if normalize:
+            total_range = 1
+        else:
+            total_range = np.concatenate(conc).max()
+        y_range = bokeh.models.Range1d(-total_range*0.02, total_range*1.02)
+
+        # Set up plot
+        p = bokeh.plotting.figure(plot_width=plot_width,
+                                  plot_height=plot_height,
+                                  x_axis_label=x_axis_label,
+                                  y_axis_label=y_axis_label,
+                                  x_range=[x.min(), x.max()],
+                                  y_range=y_range,
+                                  **kwargs)
+
+        # Set up empty data source
+        source = bokeh.models.ColumnDataSource()
+
+        # Populate glyphs
+        for i, leg in enumerate(legend_names):
+            p.line('x', 'conc_'+str(i), source=source, color=palette[i],
+                   line_width=2, legend=leg)
+
+        p.legend.click_policy = 'hide'
+
+        # Update data according to callback
+        callback(source, None, None,
+                 sliders, toggles, *extra_args)
+
+        return p, source
+
+    return interactive_xy_plot(_rd_plot, _rd_callback,
+                               slider_params, (), extra_args)
 
 
 def phase_portrait(du_dt, dv_dt, u_range, v_range, args_u=(), args_v=(),
