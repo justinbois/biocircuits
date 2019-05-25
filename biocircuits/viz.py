@@ -62,7 +62,7 @@ def _to_formal(x, y):
 
 def ecdf(data=None, conf_int=False, ptiles=[2.5, 97.5], n_bs_reps=1000,
          fill_color='lightgray', fill_alpha=1, p=None, x_axis_label=None,
-         y_axis_label='ECDF', title=None, plot_height=300, plot_width=450,
+         y_axis_label=None, title=None, plot_height=300, plot_width=450,
          formal=False, complementary=False, x_axis_type='linear',
          y_axis_type='linear', **kwargs):
     """
@@ -89,7 +89,7 @@ def ecdf(data=None, conf_int=False, ptiles=[2.5, 97.5], n_bs_reps=1000,
         figure `p`.
     x_axis_label : str, default None
         Label for the x-axis. Ignored if `p` is not None.
-    y_axis_label : str, default 'ECDF'
+    y_axis_label : str, default 'ECDF' or 'ECCDF'
         Label for the y-axis. Ignored if `p` is not None.
     title : str, default None
         Title of the plot. Ignored if `p` is not None.
@@ -117,6 +117,13 @@ def ecdf(data=None, conf_int=False, ptiles=[2.5, 97.5], n_bs_reps=1000,
     """
     # Check data to make sure legit
     data = utils._convert_data(data)
+
+    # Get y-axis label
+    if p is None and y_axis_label is None:
+        if complementary:
+            y_axis_label = 'ECCDF'
+        else:
+            y_axis_label = 'ECDF'
 
     # Data points on ECDF
     x, y = _ecdf_vals(data, formal, complementary)
