@@ -1,4 +1,4 @@
-# be150
+# biocircuits
 
 Utilities Caltech BE 150: Design Principles of Genetic Circuits
 
@@ -7,10 +7,10 @@ Utilities Caltech BE 150: Design Principles of Genetic Circuits
 
 To install use pip:
 
-    pip install be150
+    pip install biocircuits
 
 
 Or clone the repo:
 
-    git clone https://github.com/justinbois/be150.git
+    git clone https://github.com/justinbois/biocircuits.git
     python setup.py install
