@@ -1,5 +1,41 @@
+def rep_hill(x, n):
+    """Dimensionless production rate for a gene repressed by x.
+
+    Parameters
+    ----------
+    x : float or NumPy array
+        Concentration of repressor.
+    n : float
+        Hill coefficient.
+
+    Returns
+    -------
+    output : NumPy array or float
+        1 / (1 + x**n)
+    """
+    return 1 / (1 + x**n)
+
+
+def act_hill(x, n):
+    """Dimensionless production rate for a gene activated by x.
+
+    Parameters
+    ----------
+    x : float or NumPy array
+        Concentration of activator.
+    n : float
+        Hill coefficient.
+
+    Returns
+    -------
+    output : NumPy array or float
+        x**n / (1 + x**n)
+    """
+    return 1 - rep_hill(x, n)
+
+
 def aa_and(x, y, nx, ny):
-    """Dimensionless production rate for a gene regulated by two 
+    """Dimensionless production rate for a gene regulated by two
     activators with AND logic in the absence of leakage.
 
     Parameters
@@ -22,7 +58,7 @@ def aa_and(x, y, nx, ny):
 
 
 def aa_or(x, y, nx, ny):
-    """Dimensionless production rate for a gene regulated by two 
+    """Dimensionless production rate for a gene regulated by two
     activators with OR logic in the absence of leakage.
 
     Parameters
@@ -45,7 +81,7 @@ def aa_or(x, y, nx, ny):
 
 
 def rr_and(x, y, nx, ny):
-    """Dimensionless production rate for a gene regulated by two 
+    """Dimensionless production rate for a gene regulated by two
     repressors with AND logic in the absence of leakage.
 
     Parameters
@@ -68,7 +104,7 @@ def rr_and(x, y, nx, ny):
 
 
 def rr_or(x, y, nx, ny):
-    """Dimensionless production rate for a gene regulated by two 
+    """Dimensionless production rate for a gene regulated by two
     repressors with OR logic in the absence of leakage.
 
     Parameters
@@ -91,8 +127,8 @@ def rr_or(x, y, nx, ny):
 
 
 def ar_and(x, y, nx, ny):
-    """Dimensionless production rate for a gene regulated by one 
-    activator and one repressor with AND logic in the absence of 
+    """Dimensionless production rate for a gene regulated by one
+    activator and one repressor with AND logic in the absence of
     leakage.
 
     Parameters
@@ -115,8 +151,8 @@ def ar_and(x, y, nx, ny):
 
 
 def ar_or(x, y, nx, ny):
-    """Dimensionless production rate for a gene regulated by one 
-    activator and one repressor with OR logic in the absence of 
+    """Dimensionless production rate for a gene regulated by one
+    activator and one repressor with OR logic in the absence of
     leakage.
 
     Parameters
