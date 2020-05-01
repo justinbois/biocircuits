@@ -2,6 +2,7 @@ import numpy as np
 import scipy.integrate
 import scipy.interpolate
 
+
 def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
     """Integrate a system of delay differential equations defined by
         y' = f(t, y, y(t-tau1), y(t-tau2), ...)
@@ -60,42 +61,42 @@ def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
     t0 = t[0]
     y_dense = []
     t_dense = []
-    
+
     # Past function for the first step
     y_past = lambda t: y0(t, *y0_args)
-        
+
     # Integrate first step
-    t_step = np.linspace(t0, t0+tau, n_time_points_per_step)
-    y = scipy.integrate.odeint(func, y_past(t0), t_step, args=(y_past,)+args)
+    t_step = np.linspace(t0, t0 + tau, n_time_points_per_step)
+    y = scipy.integrate.odeint(func, y_past(t0), t_step, args=(y_past,) + args)
 
     # Store result from integration
     y_dense.append(y[:-1, :])
     t_dense.append(t_step[:-1])
-    
+
     # Get dimension of problem for convenience
     n = y.shape[1]
-    
+
     # Integrate subsequent steps
     j = 1
     while t_step[-1] < t[-1]:
         # Make B-spline
-        tck = [scipy.interpolate.splrep(t_step, y[:,i]) for i in range(n)]
-            
+        tck = [scipy.interpolate.splrep(t_step, y[:, i]) for i in range(n)]
+
         # Interpolant of y from previous step
-        y_past = lambda t: np.array([scipy.interpolate.splev(t, tck[i]) 
-                                         for i in range(n)])
-   
+        y_past = lambda t: np.array(
+            [scipy.interpolate.splev(t, tck[i]) for i in range(n)]
+        )
+
         # Integrate this step
-        t_step = np.linspace(t0 + j*tau, t0 + (j+1)*tau,
-                             n_time_points_per_step)
-        y = scipy.integrate.odeint(func, y[-1,:], t_step, args=(y_past,)+args)
+        t_step = np.linspace(t0 + j * tau, t0 + (j + 1) * tau, n_time_points_per_step)
+        y = scipy.integrate.odeint(func, y[-1, :], t_step, args=(y_past,) + args)
 
         # Store the result
         y_dense.append(y[:-1, :])
         t_dense.append(t_step[:-1])
 
         j += 1
-        
+
     # Concatenate results from steps
     y_dense = np.concatenate(y_dense)
     t_dense = np.concatenate(t_dense)
@@ -103,8 +104,7 @@ def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
     # Interpolate solution for returning
     y_return = np.empty((len(t), n))
     for i in range(n):
-        tck = scipy.interpolate.splrep(t_dense, y_dense[:,i])
-        y_return[:,i] = scipy.interpolate.splev(t, tck)
-        
+        tck = scipy.interpolate.splrep(t_dense, y_dense[:, i])
+        y_return[:, i] = scipy.interpolate.splev(t, tck)
+
     return y_return
-    

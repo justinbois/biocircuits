@@ -1,8 +1,20 @@
 import numpy as np
 import scipy.integrate
 
-def _dc_dt(c, t, x, derivs_0, derivs_L, diff_coeff_fun, diff_coeff_params,
-          rxn_fun, rxn_params, n_species, h):
+
+def _dc_dt(
+    c,
+    t,
+    x,
+    derivs_0,
+    derivs_L,
+    diff_coeff_fun,
+    diff_coeff_params,
+    rxn_fun,
+    rxn_params,
+    n_species,
+    h,
+):
     """
     Time derivative of concentrations in an R-D system
     for constant flux BCs.
@@ -65,7 +77,7 @@ def _dc_dt(c, t, x, derivs_0, derivs_L, diff_coeff_fun, diff_coeff_params,
     da_dt = np.empty(len(c_tuple[0]))
 
     # Useful to have square of grid spacing around
-    h2 = h**2
+    h2 = h ** 2
 
     # Compute diffusion terms (central differencing w/ Neumann BCs)
     for i in range(n_species):
@@ -77,11 +89,11 @@ def _dc_dt(c, t, x, derivs_0, derivs_L, diff_coeff_fun, diff_coeff_params,
         da_dt[0] = D[0] / h2 * 2 * (a[1] - a[0] - h * derivs_0[i])
 
         # First derivatives of D and a
-        dD_dx = (D[2:] - D[:-2]) / (2*h)
-        da_dx = (a[2:] - a[:-2]) / (2*h)
+        dD_dx = (D[2:] - D[:-2]) / (2 * h)
+        da_dx = (a[2:] - a[:-2]) / (2 * h)
 
         # Time derivative for middle grid points
-        da_dt[1:-1] = D[1:-1] * np.diff(a, 2) / h2 + dD_dx*da_dx
+        da_dt[1:-1] = D[1:-1] * np.diff(a, 2) / h2 + dD_dx * da_dx
 
         # Time derivative at left boundary
         da_dt[-1] = D[-1] / h2 * 2 * (a[-2] - a[-1] + h * derivs_L[i])
@@ -92,9 +104,19 @@ def _dc_dt(c, t, x, derivs_0, derivs_L, diff_coeff_fun, diff_coeff_params,
     return conc_deriv
 
 
-def rd_solve(c_0_tuple, t, L=1, derivs_0=0, derivs_L=0, diff_coeff_fun=None,
-             diff_coeff_params=(), rxn_fun=None, rxn_params=(),
-             rtol=1.49012e-8, atol=1.49012e-8):
+def rd_solve(
+    c_0_tuple,
+    t,
+    L=1,
+    derivs_0=0,
+    derivs_L=0,
+    diff_coeff_fun=None,
+    diff_coeff_params=(),
+    rxn_fun=None,
+    rxn_params=(),
+    rtol=1.49012e-8,
+    atol=1.49012e-8,
+):
     """
     Parameters
     ----------
@@ -153,7 +175,7 @@ def rd_solve(c_0_tuple, t, L=1, derivs_0=0, derivs_L=0, diff_coeff_fun=None,
     n_species = len(c_0_tuple)
 
     # Grid spacing
-    h = (L / (n_gridpoints - 1))
+    h = L / (n_gridpoints - 1)
 
     # Grid points
     x = np.linspace(0, L, n_gridpoints)
@@ -165,8 +187,17 @@ def rd_solve(c_0_tuple, t, L=1, derivs_0=0, derivs_L=0, diff_coeff_fun=None,
         derivs_L = np.array(n_species * [derivs_L])
 
     # Set up parameters to be passed in to _dc_dt
-    params = (x, derivs_0, derivs_L, diff_coeff_fun, diff_coeff_params,
-              rxn_fun, rxn_params, n_species, h)
+    params = (
+        x,
+        derivs_0,
+        derivs_L,
+        diff_coeff_fun,
+        diff_coeff_params,
+        rxn_fun,
+        rxn_params,
+        n_species,
+        h,
+    )
 
     # Set up initial condition
     c0 = np.empty(n_species * n_gridpoints)
@@ -175,10 +206,10 @@ def rd_solve(c_0_tuple, t, L=1, derivs_0=0, derivs_L=0, diff_coeff_fun=None,
 
     # Solve using odeint, taking advantage of banded structure
     c = scipy.integrate.odeint(
-                   _dc_dt, c0, t, args=params, ml=n_species, mu=n_species,
-                   rtol=rtol, atol=atol)
+        _dc_dt, c0, t, args=params, ml=n_species, mu=n_species, rtol=rtol, atol=atol
+    )
 
-    return tuple([c[:,i::n_species] for i in range(n_species)])
+    return tuple([c[:, i::n_species] for i in range(n_species)])
 
 
 def constant_diff_coeffs(c_tuple, t, x, diff_coeffs):

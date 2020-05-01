@@ -2,7 +2,7 @@
 
 """Top-level package for biocircuits"""
 
-__all__ = ['viz', 'utils', 'reg', 'dynsys']
+__all__ = ["viz", "utils", "reg", "dynsys"]
 
 from .viz import *
 from .utils import *
@@ -12,5 +12,5 @@ from .gillespie import *
 from .rd import *
 
 __author__ = """Justin Bois"""
-__email__ = 'bois@caltech.edu'
-__version__ = '0.0.15'
+__email__ = "bois@caltech.edu"
+__version__ = "0.0.16"

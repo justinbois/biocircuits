@@ -6,6 +6,7 @@ import numba
 
 try:
     import tqdm
+    import tqdm.notebook
 
     has_tqdm = True
 except:
@@ -163,10 +164,10 @@ def _gillespie_ssa(
     Parameters
     ----------
     propensity_func : function
-        Function with call signature 
+        Function with call signature
         `propensity_func(propensities, population, t, *args) that takes
-        the current propensities and population of particle counts and 
-        updates the propensities for each reaction. It does not return 
+        the current propensities and population of particle counts and
+        updates the propensities for each reaction. It does not return
         anything.
     update : ndarray, shape (num_reactions, num_chemical_species)
         Entry i, j gives the change in particle counts of species j
@@ -177,7 +178,7 @@ def _gillespie_ssa(
         Array of points in time for which to sample the probability
         distribution.
     return_time_points : bool, default False
-        If True, returns a trajectory and the time points of the 
+        If True, returns a trajectory and the time points of the
         trajectory, going from time_points[0] to time_points[-1].
     size : int, default 1
         Number of trajectories to sample.
@@ -208,7 +209,7 @@ def _gillespie_ssa(
             population_previous[i] = population[i]
 
     # Build trajectory function based on if propensity function is jitted
-    if type(propensity_func) == numba.targets.registry.CPUDispatcher:
+    if type(propensity_func) == numba.core.registry.CPUDispatcher:
 
         @numba.njit
         def _draw(propensities, population, t):
@@ -349,14 +350,14 @@ def _gillespie_ssa(
     iterator = range(size)
     if progress_bar == "notebook":
         if has_tqdm:
-            iterator = tqdm.tqdm_notebook(range(size))
+            iterator = tqdm.notebook.tqdm(range(size))
         else:
-            warning.warn("tqdm not installed; skipping progress bar.")
+            warning.warn("tqdm not installed or up-to-date; skipping progress bar.")
     elif progress_bar:
         if has_tqdm:
             iterator = tqdm.tqdm(range(size))
         else:
-            warning.warn("tqdm not installed; skipping progress bar.")
+            warning.warn("tqdm not installed or up-to-date; skipping progress bar.")
 
     # Perform the simulations
     for i in iterator:
@@ -388,10 +389,10 @@ def gillespie_ssa(
     Parameters
     ----------
     propensity_func : function
-        Function with call signature 
+        Function with call signature
         `propensity_func(propensities, population, t, *args) that takes
-        the current propensities and population of particle counts and 
-        updates the propensities for each reaction. It does not return 
+        the current propensities and population of particle counts and
+        updates the propensities for each reaction. It does not return
         anything.
     update : ndarray, shape (num_reactions, num_chemical_species)
         Entry i, j gives the change in particle counts of species j
@@ -414,19 +415,18 @@ def gillespie_ssa(
     Returns
     -------
     if `return_time_points` is False:
-        sample : ndarray
+        samples : ndarray
             Entry i, j, k is the count of chemical species k at time
             time_points[j] for trajectory i. The shape of the array is
             (size*n_threads, num_time_points, num_chemical_species).
     if `return_time_points` is True:
         samples : list of 2d Numpy arrays
-            Entry i corresponds to a trajectory. sample[i][j,k] is the 
-            count of chemical species k at the jth time point for
-            trajectory i.
+            samples[i][j,k] is the count of chemical species k at the
+            jth time point for trajectory i.
         times : list of 1d Numpy arrays
             Entry i corresponds to a trajectory. times[i][j] is the time
             for the transition that brought the simulation to a count
-            given by sanples[i][j,:].
+            given by samples[i][j,:].
     """
     # Check inputs
     if type(args) != tuple:
@@ -454,7 +454,10 @@ def gillespie_ssa(
         if return_time_points:
             return pop, time
         else:
-            return np.concatenate(pop, axis=0)
+            if len(pop) == 1:
+                return pop[0].reshape((1, *pop[0].shape))
+            else:
+                return np.concatenate(pop, axis=0)
     else:
         input_args = (
             propensity_func,
@@ -477,4 +480,7 @@ def gillespie_ssa(
 
             return pops, times
         else:
-            return np.stack(pops, axis=0)
+            if len(pops) == 1:
+                return pops[0].reshape((1, *pops[0].shape))
+            else:
+                return np.stack(pops, axis=0)

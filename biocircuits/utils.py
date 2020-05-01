@@ -1,7 +1,9 @@
 import numpy as np
 
+
 class AttributeContainer(object):
     """Generic class to hold attributes."""
+
     def __init__(self, **kw):
         self.__dict__ = kw
 
@@ -32,17 +34,19 @@ def _convert_data(data, inf_ok=False, min_len=1):
 
     # Make sure it is 1D
     if len(data.shape) != 1:
-        raise RuntimeError('Input must be a 1D array or Pandas series.')
+        raise RuntimeError("Input must be a 1D array or Pandas series.")
 
     # Remove NaNs
     data = data[~np.isnan(data)]
 
     # Check for infinite entries
     if not inf_ok and np.isinf(data).any():
-        raise RuntimeError('All entries must be finite.')
+        raise RuntimeError("All entries must be finite.")
 
     # Check to minimal length
     if len(data) < min_len:
-        raise RuntimeError('Array must have at least {0:d} non-NaN entries.'.format(min_len))
+        raise RuntimeError(
+            "Array must have at least {0:d} non-NaN entries.".format(min_len)
+        )
 
     return data
