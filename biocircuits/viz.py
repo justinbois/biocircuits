@@ -457,7 +457,6 @@ def phase_portrait(
     args_u=(),
     args_v=(),
     log=False,
-    base_plot=None,
     p=None,
     zoomable=False,
     **kwargs
@@ -500,8 +499,9 @@ def phase_portrait(
     output : bokeh.plotting.Figure instance populated with streamplot
     """
     if zoomable:
+        _kwargs = {f'_{key}': val for key, val in kwargs.items()}
         return _zoomable_phase_portrait(
-            du_dt, dv_dt, u_range, v_range, args_u, args_v, log, p, **kwargs
+            du_dt, dv_dt, u_range, v_range, args_u, args_v, log, p, **_kwargs
         )
     else:
         return _phase_portrait(
@@ -784,7 +784,6 @@ def _zoomable_phase_portrait(
     -----
     .. Adapted from matplotlib.streamplot.streamplot.py.
     """
-
     def _plot_app(doc):
         (
             du_dt,
@@ -825,7 +824,6 @@ def _zoomable_phase_portrait(
             _integration_direction,
             _arrow_level,
         )
-
         p = _baseplot(p, **kwargs)
 
         # Ensure plot fits stream lines
@@ -910,7 +908,7 @@ def _zoomable_phase_portrait(
             source=line_source,
             xs="xs",
             ys="ys",
-            color=color,
+            line_color=color,
             line_width="line_width",
             line_alpha=alpha,
         )
@@ -1137,8 +1135,8 @@ def _streamlines(
 def imshow(
     im,
     color_mapper=None,
-    plot_height=400,
-    plot_width=None,
+    frame_height=400,
+    frame_width=None,
     length_units="pixels",
     interpixel_distance=1.0,
     x_range=None,
@@ -1297,22 +1295,22 @@ def imshow(
         y_range = [0, dh]
 
     # Set up figure with appropriate dimensions
-    if plot_width is None:
-        plot_width = int(m / n * plot_height)
+    if frame_width is None:
+        frame_width = int(m / n * frame_height)
     if colorbar:
-        plot_width += 40
         toolbar_location = "above"
     else:
         toolbar_location = "right"
     p = bokeh.plotting.figure(
-        plot_height=plot_height,
-        plot_width=plot_width,
+        frame_height=frame_height,
+        frame_width=frame_width,
         x_range=x_range,
         y_range=y_range,
         title=title,
         toolbar_location=toolbar_location,
         tools="pan,box_zoom,wheel_zoom,save,reset",
     )
+
     if no_ticks:
         p.xaxis.major_label_text_font_size = "0pt"
         p.yaxis.major_label_text_font_size = "0pt"
