@@ -11,6 +11,265 @@ import bokeh.plotting
 
 from . import utils
 
+_default_palette = [
+    "#1f77b3",
+    "#ff7e0e",
+    "#2ba02b",
+    "#d62628",
+    "#9367bc",
+    "#8c564b",
+    "#e277c1",
+    "#7e7e7e",
+    "#bcbc21",
+    "#16bdcf",
+    "#3a0182",
+    "#004201",
+    "#0fffa8",
+    "#5d003f",
+    "#bcbcff",
+    "#d8afa1",
+    "#b80080",
+    "#004d52",
+    "#6b6400",
+    "#7c0100",
+    "#6026ff",
+    "#ffff9a",
+    "#564964",
+    "#8cb893",
+    "#93fbff",
+    "#018267",
+    "#90ff00",
+    "#8200a0",
+    "#ac8944",
+    "#5b3400",
+    "#ffbff2",
+    "#ff6e75",
+    "#798cff",
+    "#dd00ff",
+    "#505646",
+    "#004489",
+    "#ffbf60",
+    "#ff018c",
+    "#bdc8cf",
+    "#af97b5",
+    "#b65600",
+    "#017000",
+    "#cd87ff",
+    "#1cd646",
+    "#bfebc3",
+    "#7997b5",
+    "#a56089",
+    "#6e8956",
+    "#bc7c75",
+    "#8a2844",
+    "#00acff",
+    "#8ed4ff",
+    "#4b6d77",
+    "#00d4b1",
+    "#9300f2",
+    "#8a9500",
+    "#5d5b9e",
+    "#fddfba",
+    "#00939e",
+    "#ffdb00",
+    "#00aa79",
+    "#520067",
+    "#000091",
+    "#0a5d3d",
+    "#a5e275",
+    "#623b41",
+    "#c6c689",
+    "#ff9eb5",
+    "#cd4f6b",
+    "#ff07d6",
+    "#8a3a05",
+    "#7e3d70",
+    "#ff4901",
+    "#602ba5",
+    "#1c00ff",
+    "#e6dfff",
+    "#aa3baf",
+    "#d89c00",
+    "#a3a39e",
+    "#3f69ff",
+    "#46490c",
+    "#7b6985",
+    "#6b978c",
+    "#ff9a75",
+    "#835bff",
+    "#7c6b46",
+    "#80b654",
+    "#bc0049",
+    "#fd93ff",
+    "#5d0018",
+    "#89d1d1",
+    "#9c8cd3",
+    "#da6d42",
+    "#8a5700",
+    "#3b5069",
+    "#4b6b3b",
+    "#edcfd8",
+    "#cfedff",
+    "#aa1500",
+    "#dfff4f",
+    "#ff2a56",
+    "#d1499e",
+    "#707cb8",
+    "#598000",
+    "#00e4fd",
+    "#774b95",
+    "#67d48c",
+    "#3d3a72",
+    "#ac413f",
+    "#d6a166",
+    "#c169cd",
+    "#69595d",
+    "#87aced",
+    "#a0a569",
+    "#d1aae6",
+    "#870062",
+    "#00fddb",
+    "#672818",
+    "#b342ff",
+    "#0e59c4",
+    "#168742",
+    "#90d300",
+    "#cd7900",
+    "#f959ff",
+    "#5b7466",
+    "#8eaeb3",
+    "#9c7c8c",
+    "#4600c6",
+    "#6b4d2d",
+    "#a56d46",
+    "#9e8972",
+    "#a8afca",
+    "#cd8ca7",
+    "#00fd64",
+    "#917900",
+    "#ff62a1",
+    "#f4ffd8",
+    "#018cf0",
+    "#13aca0",
+    "#5b2d59",
+    "#89859e",
+    "#cfccba",
+    "#d4afc4",
+    "#dbdd6d",
+    "#cffff4",
+    "#006485",
+    "#006962",
+    "#a84167",
+    "#2d97c4",
+    "#a874ff",
+    "#26ba5d",
+    "#57b600",
+    "#caffa7",
+    "#a379aa",
+    "#ffbc93",
+    "#89e2c1",
+    "#0fc8ff",
+    "#d400c4",
+    "#626d89",
+    "#69858e",
+    "#4b4d52",
+    "#aa6067",
+    "#79b5d4",
+    "#2b5916",
+    "#9a0024",
+    "#bdd1f2",
+    "#896e67",
+    "#69a56b",
+    "#855467",
+    "#aecdba",
+    "#87997e",
+    "#cadb00",
+    "#9a0390",
+    "#ebbc1a",
+    "#eb9cd1",
+    "#70006e",
+    "#b1a131",
+    "#ca6b93",
+    "#4146a3",
+    "#e48c89",
+    "#d44400",
+    "#c68aca",
+    "#b69597",
+    "#d41f75",
+    "#724bcc",
+    "#674d00",
+    "#672138",
+    "#38564f",
+    "#6ebaaa",
+    "#853a31",
+    "#a5d397",
+    "#b8af8e",
+    "#d8e4df",
+    "#aa00df",
+    "#cac1db",
+    "#ffdf8c",
+    "#e2524d",
+    "#66696e",
+    "#ff001c",
+    "#522d72",
+    "#4d906b",
+    "#a86d11",
+    "#ff9e26",
+    "#5ea3af",
+    "#c88556",
+    "#915997",
+    "#a3a1ff",
+    "#fdbaba",
+    "#242a87",
+    "#dbe6a8",
+    "#97f2a7",
+    "#6793d6",
+    "#ba5b3f",
+    "#3a5d91",
+    "#364f2f",
+    "#267c95",
+    "#89959a",
+    "#cfb356",
+    "#004664",
+    "#5e5d2f",
+    "#8e8e41",
+    "#ac3f13",
+    "#69953b",
+    "#a13d85",
+    "#bfb6ba",
+    "#acc667",
+    "#6469cf",
+    "#91af00",
+    "#2be2da",
+    "#016e36",
+    "#ff7952",
+    "#42807e",
+    "#4fe800",
+    "#995428",
+    "#5d0a00",
+    "#a30057",
+    "#0c8700",
+    "#5982a7",
+    "#ffebfb",
+    "#4b6901",
+    "#8775d4",
+    "#e6c6ff",
+    "#a5ffda",
+    "#d86e77",
+    "#df014b",
+    "#69675b",
+    "#776ba1",
+    "#7e8067",
+    "#594685",
+    "#0000ca",
+    "#7c002a",
+    "#97ff72",
+    "#b5e2e1",
+    "#db52c8",
+    "#777734",
+    "#57bd8e",
+]
+
 
 def _ecdf_vals(data, formal=False, complementary=False):
     """Get x, y, values of an ECDF for plotting.
@@ -78,7 +337,7 @@ def ecdf(
     complementary=False,
     x_axis_type="linear",
     y_axis_type="linear",
-    **kwargs
+    **kwargs,
 ):
     """
     Create a plot of an ECDF.
@@ -317,48 +576,38 @@ def interactive_xy_plot(
     return bokeh.application.Application(handler)
 
 
-def rd_plot(
-    conc,
+def xyt_plot(
+    x,
+    y,
     t,
-    L=1,
-    normalize=False,
+    glyph="line",
     legend_names=None,
-    x_axis_label="x",
-    y_axis_label=None,
-    plot_width=500,
-    plot_height=300,
-    palette=bokeh.palettes.d3["Category10"][10],
-    **kwargs
+    legend_location="top_right",
+    palette=None,
+    glyph_kwargs={},
+    time_slider_title="time",
+    **kwargs,
 ):
     """Create an interactive plot some the output of `rd_solve()`.
 
     Parameters
     ----------
-    conc : tuple of 2D Numpy arrays
-        Concentration of species. `conc[i][j, k]` is the concentration
-        of species i at time point j and position k.
+    x: 1D Numpy array
+        x-values for plot.
+    y : tuple of 2D Numpy arrays
+        y-values for plot. `y[i][j, k]` is the y-value for curve i at
+        time point j and position x[k].
     t : Numpy array
-        Time points of the solutions.
-    L : float, default 1
-        Length of the domain.
-    normalize : bool, default False
-        If True, construct the plot such the maximal concentration each
-        species reaches is one. If False, use absolution levels of the
-        concentrations.
+        y-values for plot.
+    glyph : str, either "line" or "circle"
+        What kind of glyph to use in plot.
     legend_names : list or None, default None
-        Names of the chemical species.
-    x_axis_label : str, default 'x'
-        Label for x-axis of plot
-    y_axis_label : str, default None
-        Label for y-axis of plot. If None and `normalize` is True, then
-        'normalized concentration'. If `normalize` is False, then
-        'concenatration'.
-    plot_width : int, default 500
-        Width of the plot.
-    plot_heigth : int, default 300
-        Height of the plot.
+        Names for legend in plot.
+    legend_location : str, default 'top_right'
+        Position of legend using Bokeh's specifications for legend
+        position. Ignored if `legend_names` is None.
     palette : List of colors default bokeh.palettes.d3['Category10'][10]
-        Color palette to use for chemical species.
+        Color palette to use for curves.
     kwargs :
         All other kwargs are passed to bokeh.plotting.figure() in
         creating the figure.
@@ -366,90 +615,135 @@ def rd_plot(
     Returns
     -------
     output
-        An interactive plot app with the concentrations plotted with a
-        time slider.
+        An interactive plot with a time slider.
     """
+    if palette is None:
+        palette = _default_palette
 
-    if y_axis_label is None:
-        if normalize:
-            y_axis_label = "normalized concentration"
-        else:
-            y_axis_label = "concentration"
+    if glyph not in ["line", "circle"]:
+        raise RuntimeError("Only 'line' or 'circle' glyphs allowed.")
 
-    if len(conc) > 10:
-        raise RuntimeError("Can only handle ten species.")
-    slider_params = (
-        utils.AttributeContainer(
-            title="t", start=t[0], end=t[-1], value=t[0], step=np.diff(t).mean()
-        ),
-    )
+    # Set defaults
+    if glyph == "line" and 'line_width' not in glyph_kwargs:
+        glyph_kwargs['line_width'] = 2
+    if "x_axis_label" not in kwargs:
+        kwargs["x_axis_label"] = "x"
+    if "y_axis_label" not in kwargs:
+        kwargs["y_axis_label"] = "y"
+    if "frame_height" not in kwargs and "plot_height" not in kwargs:
+        kwargs["frame_height"] = 275
+    if "frame_width" not in kwargs and "plot_width" not in kwargs:
+        kwargs["frame_width"] = 450
+    if "y_range" not in kwargs:
+        total_range_min = np.concatenate(y).min()
+        total_range_max = np.concatenate(y).max()
+        total_range = total_range_max - total_range_min
+        kwargs["y_range"] = [
+            total_range_min - total_range * 0.02,
+            total_range_max + total_range * 0.02,
+        ]
+    if "x_range" not in kwargs:
+        kwargs["x_range"] = [x.min(), x.max()]
 
-    x = np.linspace(0, L, len(conc[0][0, :]))
-    extra_args = (x, conc)
+    if "color" not in glyph_kwargs and len(y) > len(palette):
+        raise RuntimeError("Not enough colors in palette for curves.")
 
     if legend_names is None:
-        legend_names = [None for _ in range(len(conc))]
-    elif len(legend_names) != len(conc):
-        raise RuntimeError("len(legend_names) must equal len(conc).")
+        legend_names = [None for _ in range(len(y))]
+    elif len(legend_names) != len(y):
+        raise RuntimeError("len(legend_names) must equal len(y).")
 
-    def _rd_callback(source, x_range, y_range, sliders, toggles, x, conc):
-        # Get index of time point
-        t_point = sliders[0].value
-        i = np.searchsorted(t, t_point)
+    t_slider = bokeh.models.Slider(
+        title=time_slider_title,
+        name="t",
+        start=t[0],
+        end=t[-1],
+        value=t[0],
+        step=np.diff(t).mean(),
+    )
 
-        # Update source
-        source.data["x"] = x
-        if normalize:
-            conc_max = [c.max() for c in conc]
-        else:
-            conc_max = np.ones(len(conc))
-        for j, c in enumerate(conc):
-            source.data["conc_" + str(j)] = c[i, :] / conc_max[j]
+    # Build data sources, source has all of the data
+    data_dict = {"y_" + str(j): [] for j in range(len(y))}
+    data_dict["i"] = []
+    for i in range(len(t)):
+        data_dict["i"] += [i] * len(x)
+        for j, c in enumerate(y):
+            data_dict["y_" + str(j)] += list(c[i, :])
+    source = bokeh.models.ColumnDataSource(data_dict)
 
-    def _rd_plot(callback, sliders, toggles, extra_args):
-        # Determine y-range
-        if normalize:
-            total_range = 1
-        else:
-            total_range = np.concatenate(conc).max()
-        y_range = bokeh.models.Range1d(-total_range * 0.02, total_range * 1.02)
+    # source_plot has only the data that will be displayed at a given time
+    plot_dict = {
+        "y_" + str(j): data_dict["y_" + str(j)][: len(x)] for j in range(len(y))
+    }
+    plot_dict["x"] = x
+    source_plot = bokeh.models.ColumnDataSource(plot_dict)
 
-        # Set up plot
-        p = bokeh.plotting.figure(
-            plot_width=plot_width,
-            plot_height=plot_height,
-            x_axis_label=x_axis_label,
-            y_axis_label=y_axis_label,
-            x_range=[x.min(), x.max()],
-            y_range=y_range,
-            **kwargs
-        )
+    # The time points, need to have around
+    source_t = bokeh.models.ColumnDataSource(dict(t=t))
 
-        # Set up empty data source
-        source = bokeh.models.ColumnDataSource()
+    # Make the plot
+    p = bokeh.plotting.figure(**kwargs)
 
-        # Populate glyphs
-        click_policy = False
-        for i, leg in enumerate(legend_names):
-            args = dict(source=source, color=palette[i], line_width=2)
-            if leg is not None:
-                args['legend_label'] = str(leg)
-                click_policy = True
-            p.line(
-                "x",
-                "conc_" + str(i),
-                **args
-            )
+    click_policy = False
+    args = {key: val for key, val in glyph_kwargs.items()}
+    args["source"] = source_plot
+    for i, leg in enumerate(legend_names):
+        if "color" not in glyph_kwargs:
+            args["color"] = palette[i]
 
-        if click_policy:
-            p.legend.click_policy = "hide"
+        if leg is not None:
+            args["legend_label"] = str(leg)
+            click_policy = True
 
-        # Update data according to callback
-        callback(source, None, None, sliders, toggles, *extra_args)
+        if glyph == "line":
+            p.line("x", "y_" + str(i), **args)
+        elif glyph == "circle":
+            p.circle("x", "y_" + str(i), **args)
 
-        return p, source
+    if click_policy:
+        p.legend.click_policy = "hide"
+        p.legend.location = legend_location
 
-    return interactive_xy_plot(_rd_plot, _rd_callback, slider_params, (), extra_args)
+    # Callback
+    js_code = """
+function sortedIndex(array, value) {
+    var low = 0,
+        high = array.length;
+
+    while (low < high) {
+        var mid = (low + high) >>> 1;
+        if (array[mid] < value) low = mid + 1;
+        else high = mid;
+    }
+    return low;
+}
+
+var x = source_plot.data['x'];
+var x_len = x.length;
+var t = source_t.data['t'];
+
+var i = sortedIndex(t, cb_obj.value);
+
+var k;
+"""
+
+    for var_name in ["y_" + str(j) for j in range(len(y))]:
+        js_code += f"""var {var_name} = source_plot.data['{var_name}'];
+var {var_name}_source = source.data['{var_name}'];
+for (k = 0; k < x_len; k++) {var_name}[k] = {var_name}_source[x_len * i + k];
+
+"""
+
+    js_code += "source_plot.change.emit();\n"
+
+    callback = bokeh.models.CustomJS(
+        args=dict(source=source, source_t=source_t, source_plot=source_plot),
+        code=js_code,
+    )
+
+    t_slider.js_on_change("value", callback)
+
+    return bokeh.layouts.column(t_slider, p)
 
 
 def phase_portrait(
@@ -462,7 +756,7 @@ def phase_portrait(
     log=False,
     p=None,
     zoomable=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Plots the phase portrait for a 2D dynamical system in the u-v plane.
@@ -502,7 +796,7 @@ def phase_portrait(
     output : bokeh.plotting.Figure instance populated with streamplot
     """
     if zoomable:
-        _kwargs = {f'_{key}': val for key, val in kwargs.items()}
+        _kwargs = {f"_{key}": val for key, val in kwargs.items()}
         return _zoomable_phase_portrait(
             du_dt, dv_dt, u_range, v_range, args_u, args_v, log, p, **_kwargs
         )
@@ -555,7 +849,7 @@ def streamplot(
     max_length=4.0,
     integration_direction="both",
     arrow_level="underlay",
-    **kwargs
+    **kwargs,
 ):
     """Draws streamlines of a vector flow.
 
@@ -739,7 +1033,7 @@ def _zoomable_phase_portrait(
     _max_length=4.0,
     _integration_direction="both",
     _arrow_level="underlay",
-    **kwargs
+    **kwargs,
 ):
     """Draws streamlines of a vector flow.
 
@@ -787,6 +1081,7 @@ def _zoomable_phase_portrait(
     -----
     .. Adapted from matplotlib.streamplot.streamplot.py.
     """
+
     def _plot_app(doc):
         (
             du_dt,
@@ -1268,7 +1563,7 @@ def imshow(
                 im_2_min=min_intensity,
                 im_0_max=max_intensity,
                 im_1_max=max_intensity,
-                im_2_max=max_intensity
+                im_2_max=max_intensity,
             )
         elif color_mapper.lower() == "rgb":
             im = im_merge(
@@ -1279,7 +1574,7 @@ def imshow(
                 im_2_min=min_intensity,
                 im_0_max=max_intensity,
                 im_1_max=max_intensity,
-                im_2_max=max_intensity
+                im_2_max=max_intensity,
             )
         else:
             raise RuntimeError("Invalid color mapper for color image.")
