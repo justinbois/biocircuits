@@ -310,7 +310,7 @@ def interactive_xy_plot(
         p.y_range.on_change("end", _callback)
 
         # Add the plot to the app
-        widgets = bokeh.layouts.widgetbox(*sliders, *toggles)
+        widgets = bokeh.layouts.column(*sliders, *toggles)
         doc.add_root(bokeh.layouts.column(widgets, p))
 
     handler = bokeh.application.handlers.FunctionHandler(_plot_app)
@@ -429,17 +429,20 @@ def rd_plot(
         source = bokeh.models.ColumnDataSource()
 
         # Populate glyphs
+        click_policy = False
         for i, leg in enumerate(legend_names):
+            args = dict(source=source, color=palette[i], line_width=2)
+            if leg is not None:
+                args['legend_label'] = str(leg)
+                click_policy = True
             p.line(
                 "x",
                 "conc_" + str(i),
-                source=source,
-                color=palette[i],
-                line_width=2,
-                legend=leg,
+                **args
             )
 
-        p.legend.click_policy = "hide"
+        if click_policy:
+            p.legend.click_policy = "hide"
 
         # Update data according to callback
         callback(source, None, None, sliders, toggles, *extra_args)
