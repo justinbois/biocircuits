@@ -52,9 +52,9 @@ def aa_and(x, y, nx, ny):
     Returns
     -------
     output : NumPy array or float
-        x**nx * y**ny / (1 + x**nx * y**ny)
+        x**nx * y**ny / (1 + x**nx) / (1 + y**ny)
     """
-    return x ** nx * y ** ny / (1 + x ** nx * y ** ny)
+    return x ** nx * y ** ny / (1 + x ** nx) / (1 + y ** ny)
 
 
 def aa_or(x, y, nx, ny):
