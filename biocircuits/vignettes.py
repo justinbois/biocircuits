@@ -31,14 +31,17 @@ def _make_N(nA, nB, nL):
     rxns = _make_rxns(nA, nB, nL)
     N = eqtk.parse_rxns(rxns)
 
-    # Sorted names
-    names = sorted(N.columns, key=lambda s: (len(s), s))
-
-    # Sorted columns
-    N = N[names]
+    # Impose ordering of names
+    names = [f"A_{i+1}" for i in range(nA)]
+    names += [f"B_{i+1}" for i in range(nB)]
+    names += [f"L_{i+1}" for i in range(nL)]
+    names += [f"D_{i+1}_{j+1}" for j in range(nL) for i in range(nA)]
+    names += [
+        f"T_{i+1}_{j+1}_{k+1}" for j in range(nL) for i in range(nA) for k in range(nB)
+    ]
 
     # As a Numpy array
-    return N.to_numpy(copy=True, dtype=float)
+    return N[names].to_numpy(copy=True, dtype=float)
 
 
 def _readout(epsilon, c):
@@ -158,119 +161,119 @@ def _param_dict_to_array(param_dict):
     )
 
 
-_additive_params = {
-    "logA": np.log10(np.array([7.0003e-2, 7.2265e-3])),
-    "logB": np.log10(np.array([1.4505e1, 2.0123e-3])),
+_imbalance_params = {
+    "logA": np.log10(np.array([0.070003, 0.0072265])),
+    "logB": np.log10(np.array([14.505, 0.0020123])),
     "K": (
-        5.5065e-01,
-        4.4935e-01,
-        3.2076e-02,
-        9.6792e-01,
-        1.0169e-01,
-        3.8524e-02,
-        2.0614e-02,
-        1.4488e-01,
-        2.8462e-01,
-        6.6946e-03,
-        2.7227e-01,
-        1.3070e-01,
+        0.55065,
+        0.44935,
+        0.032076,
+        0.96792,
+        0.10169,
+        0.28462,
+        0.038524,
+        0.0066946,
+        0.020614,
+        0.27227,
+        0.14488,
+        0.1307,
     ),
     "epsilon": (
-        1.2357e-02,
-        4.8492e-01,
-        9.6726e-02,
-        4.7076e-02,
-        1.8003e-01,
-        4.4150e-02,
-        8.6891e-02,
-        4.7853e-02,
+        0.012357,
+        0.18003,
+        0.48492,
+        0.04415,
+        0.096726,
+        0.086891,
+        0.047076,
+        0.047853,
+    ),
+}
+
+_additive_params = {
+    "logA": np.log10(np.array([0.14356, 0.0031554])),
+    "logB": np.log10(np.array([0.029711, 0.089175])),
+    "K": (
+        0.73952,
+        0.26048,
+        0.33582,
+        0.66418,
+        0.31139,
+        0.10826,
+        0.086969,
+        0.019978,
+        0.008519,
+        0.092182,
+        0.33719,
+        0.035517,
+    ),
+    "epsilon": (
+        0.052266,
+        0.092732,
+        0.35798,
+        0.1635,
+        0.0915,
+        0.16255,
+        0.076068,
+        0.0034033,
     ),
 }
 
 _ratiometric_params = {
-    "logA": np.log10(np.array([1.4356e-1, 3.1554e-3])),
-    "logB": np.log10(np.array([2.9711e-2, 8.9175e-2])),
+    "logA": np.log10(np.array([14.758, 85.588])),
+    "logB": np.log10(np.array([107.92, 0.28909])),
     "K": (
-        7.3952e-1,
-        2.6048e-1,
-        3.3582e-1,
-        6.6418e-1,
-        3.1139e-1,
-        8.6969e-2,
-        8.5190e-3,
-        3.3719e-1,
-        1.0826e-1,
-        1.9978e-2,
-        9.2182e-2,
-        3.5517e-2,
+        0.0016677,
+        0.99833,
+        0.71197,
+        0.28803,
+        0.010589,
+        0.22728,
+        0.24735,
+        0.0040583,
+        0.13076,
+        0.24912,
+        0.10161,
+        0.029231,
     ),
     "epsilon": (
-        5.2266e-2,
-        3.5798e-1,
-        9.1500e-2,
-        7.6068e-2,
-        9.2732e-2,
-        1.6350e-1,
-        1.6255e-1,
-        3.4033e-3,
-    ),
-}
-
-_imbalance_params = {
-    "logA": np.log10(np.array([1.4758e1, 8.5588e1])),
-    "logB": np.log10(np.array([1.0792e2, 2.8909e-1])),
-    "K": (
-        1.6677e-3,
-        9.9833e-1,
-        7.1197e-1,
-        2.8803e-1,
-        1.0589e-2,
-        2.4735e-1,
-        1.3076e-1,
-        1.0161e-1,
-        2.2728e-1,
-        4.0583e-3,
-        2.4912e-1,
-        2.9231e-2,
-    ),
-    "epsilon": (
-        9.8864e-2,
-        9.1882e-4,
-        3.9245e-2,
-        3.8461e-1,
-        2.1308e-2,
-        2.2745e-1,
-        1.6528e-1,
-        6.2319e-2,
+        0.098864,
+        0.021308,
+        0.00091882,
+        0.22745,
+        0.039245,
+        0.16528,
+        0.38461,
+        0.062319,
     ),
 }
 
 _balance_params = {
-    "logA": np.log10(np.array([2.2772, 2.7011e2])),
-    "logB": np.log10(np.array([2.4410e-1, 1.2624])),
+    "logA": np.log10(np.array([2.2772, 270.11])),
+    "logB": np.log10(np.array([0.2441, 1.2624])),
     "K": (
-        7.4172e-1,
-        2.5828e-1,
-        6.6746e-1,
-        3.3254e-1,
-        2.2697e-1,
-        2.2169e-1,
-        1.7624e-1,
-        4.7332e-2,
-        3.0042e-2,
-        1.3930e-3,
-        1.1554e-1,
-        1.8079e-1,
+        0.74172,
+        0.25828,
+        0.66746,
+        0.33254,
+        0.22697,
+        0.030042,
+        0.22169,
+        0.001393,
+        0.17624,
+        0.11554,
+        0.047332,
+        0.18079,
     ),
     "epsilon": (
-        9.5076e-2,
-        4.9264e-1,
-        1.6782e-1,
-        2.1015e-2,
-        1.7184e-2,
-        3.2259e-2,
-        7.3906e-2,
-        1.0010e-1,
+        0.095076,
+        0.017184,
+        0.49264,
+        0.032259,
+        0.16782,
+        0.073906,
+        0.021015,
+        0.1001,
     ),
 }
 
@@ -339,24 +342,24 @@ def promiscuous_222_app(
     def app(doc):
         param_names = [
             "K11",
-            "K12",
             "K21",
+            "K12",
             "K22",
             "K111",
-            "K121",
-            "K211",
-            "K221",
             "K112",
-            "K122",
+            "K211",
             "K212",
+            "K121",
+            "K122",
+            "K221",
             "K222",
             "eps111",
-            "eps121",
-            "eps211",
-            "eps221",
             "eps112",
-            "eps122",
+            "eps211",
             "eps212",
+            "eps121",
+            "eps122",
+            "eps221",
             "eps222",
             "log10 A1",
             "log10 A2",
@@ -423,6 +426,13 @@ def promiscuous_222_app(
         outfile_input = bokeh.models.TextInput(
             title="file name", value="_tmp.csv", width=165
         )
+
+        # Load current parameters button
+        load_params_button = bokeh.models.Button(
+            label="load params", button_type="warning", width=165
+        )
+        infile_input = bokeh.models.TextInput(title="file name", value="", width=165)
+        load_status = bokeh.models.Div(text="", width=165)
 
         # Initial concentrations
         c0, fixed_c = _make_c0_grid(2, 2, 2, n)
@@ -706,6 +716,60 @@ def promiscuous_222_app(
             else:
                 df.to_csv(fname, index=False)
 
+        def load_parameters(event=None):
+            load_status.text = "<center>Loading....</center>"
+            try:
+                df = pd.read_csv(infile_input.value)
+                df["log10 A1"] = np.log10(df["A1"])
+                df["log10 A2"] = np.log10(df["A2"])
+                df["log10 B1"] = np.log10(df["B1"])
+                df["log10 B2"] = np.log10(df["B2"])
+
+                K_dict = {name: [] for name in param_names[:12]}
+                eps_dict = {name: [] for name in param_names[12:20]}
+                receptor_dict = {
+                    "log10 A1": [],
+                    "log10 A2": [],
+                    "log10 B1": [],
+                    "log10 B2": [],
+                }
+                lic_rls_dict = {"lic": [], "rls": []}
+
+                for i, r in df.iterrows():
+                    K = np.array([r[name] for name in param_names[:12]])
+                    epsilon = np.array([r[name] for name in param_names[12:20]])
+                    logA = np.array([r["log10 A1"], r["log10 A2"]])
+                    logB = np.array([r["log10 B1"], r["log10 B2"]])
+
+                    c0_rim, fixed_c_rim = _make_c0_rim(n, logA, logB, log_low, log_high)
+
+                    # Solve along the rim
+                    c_rim = eqtk.fixed_value_solve(
+                        c0=c0_rim, fixed_c=fixed_c_rim, N=N, K=K
+                    )
+                    s_rim = _readout(epsilon, c_rim)
+
+                    # Compute LIC and RLS
+                    lic, rls = _lic_rls(s_rim)
+
+                    for i, name in enumerate(param_names[:12]):
+                        K_dict[name].append(K[i])
+                    for i, name in enumerate(param_names[12:20]):
+                        eps_dict[name].append(epsilon[i])
+                    receptor_dict["log10 A1"].append(logA[0])
+                    receptor_dict["log10 A2"].append(logA[1])
+                    receptor_dict["log10 B1"].append(logB[0])
+                    receptor_dict["log10 B2"].append(logB[1])
+                    lic_rls_dict["lic"].append(lic)
+                    lic_rls_dict["rls"].append(rls)
+
+                data_dict = {**lic_rls_dict, **K_dict, **eps_dict, **receptor_dict}
+                source_lic_rls_cum.stream(data_dict)
+
+                load_status.text = "<center>Load successful.</center>"
+            except:
+                load_status.text = "<center>Load failed.</center>"
+
         def remove_on_changes():
             for param in param_names:
                 sliders[param].remove_on_change("value_throttled", update)
@@ -758,6 +822,7 @@ def promiscuous_222_app(
         balance_params_button.on_click(params_reset_balance)
         gen_random_params_button.on_click(random_parameters)
         save_params_button.on_click(save_current_parameters)
+        load_params_button.on_click(load_parameters)
 
         # Run update to populate plots
         update(None, None, None)
@@ -773,7 +838,9 @@ def promiscuous_222_app(
 
         slider_row = bokeh.layouts.row(
             bokeh.layouts.column(*col1),
+            bokeh.layouts.Spacer(width=10),
             bokeh.layouts.column(*col2),
+            bokeh.layouts.Spacer(width=10),
             bokeh.layouts.column(*col3),
         )
 
@@ -810,11 +877,21 @@ def promiscuous_222_app(
             outfile_input,
         )
 
+        load_params = bokeh.layouts.row(
+            bokeh.layouts.column(
+                bokeh.layouts.Spacer(height=18), load_params_button, load_status
+            ),
+            bokeh.layouts.Spacer(width=15),
+            infile_input,
+        )
+
         params_col = bokeh.layouts.column(
-            bokeh.models.Spacer(height=20),
+            bokeh.models.Spacer(height=15),
             random_params,
-            bokeh.layouts.Spacer(height=20),
+            bokeh.layouts.Spacer(height=15),
             save_params,
+            bokeh.layouts.Spacer(height=15),
+            load_params,
         )
 
         row3 = bokeh.layouts.row(
@@ -843,7 +920,9 @@ def promiscuous_222_app(
             <br />
             <li>To expedite exploration of parameters, you can generate many random parameter sets and populate the LIC/RLS plot with the results by clicking the "generate random params" button. The values of the sliders and the matrix and rim plot will not change, but you can click on any of the blue dots added to the LIC/RLS plot to set the sliders and plots to those parameters. You can choose how many sets of parameters you which to generate from the "# of random param sets" pull-down menu. You may have to wait several seconds if you generate more than 30 sets at a time.</li>
             <br />
-            <li>To store the current parameter values, click the "save current params" button. The parameter values will be saved to a CSV file given in the "file name" text box. If the file already exists, the current parameter values will be appended.</li>
+            <li>To store the current parameter values, click the "save current params" button. The parameter values will be saved to a CSV file given in the adjacent "file name" text box. If the file already exists, the current parameter values will be appended.</li>
+            <br />
+            <li>To load sets of parameters, click the "load params" button and the parameters in file specified in the adjacent "file name" text box will be loaded. The parameters are loaded and a corresponding glyph is added to the LIC/RLS plot.</li>
             </ul>
             </div>
         """,
