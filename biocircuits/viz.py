@@ -624,8 +624,8 @@ def xyt_plot(
         raise RuntimeError("Only 'line' or 'circle' glyphs allowed.")
 
     # Set defaults
-    if glyph == "line" and 'line_width' not in glyph_kwargs:
-        glyph_kwargs['line_width'] = 2
+    if glyph == "line" and "line_width" not in glyph_kwargs:
+        glyph_kwargs["line_width"] = 2
     if "x_axis_label" not in kwargs:
         kwargs["x_axis_label"] = "x"
     if "y_axis_label" not in kwargs:
