@@ -312,10 +312,10 @@ def promiscuous_222_app(
        `promiscuous_app.py`, with the following contents:
 
        ```
-       import biocircuits.vignettes
+       import biocircuits.apps
        import bokeh.plotting
 
-       app = biocircuits.vignettes.promiscuous_222_app()
+       app = biocircuits.apps.promiscuous_222_app()
 
        app(bokeh.plotting.curdoc())
        ```
@@ -324,13 +324,12 @@ def promiscuous_222_app(
     .. To run the app from a Jupyter notebook, do the following in a
        code cell:
        ```
-       import biocircuits.vignettes
+       import biocircuits.apps
        import bokeh.io
-       import bokeh.plotting
 
        bokeh.io.output_notebook()
 
-       app = biocircuits.vignettes.promiscuous_222_app()
+       app = biocircuits.apps.promiscuous_222_app()
        bokeh.io.show(app, notebook_url='localhost:8888')
 
        ```
@@ -922,7 +921,7 @@ def promiscuous_222_app(
             <br />
             <li>To store the current parameter values, click the "save current params" button. The parameter values will be saved to a CSV file given in the adjacent "file name" text box. If the file already exists, the current parameter values will be appended.</li>
             <br />
-            <li>To load sets of parameters, click the "load params" button and the parameters in file specified in the adjacent "file name" text box will be loaded. The parameters are loaded and a corresponding glyph is added to the LIC/RLS plot.</li>
+            <li>To load sets of parameters, click the "load params" button and the parameters in file specified in the adjacent "file name" text box will be loaded. The parameters are loaded and a corresponding glyph is added to the LIC/RLS plot. The format of the input file is the same as the output when you click "save current params."</li>
             </ul>
             </div>
         """,

@@ -117,7 +117,8 @@ def rd_solve(
     rtol=1.49012e-8,
     atol=1.49012e-8,
 ):
-    """
+    """Solve a system of reaction-diffusion equations in space and time.
+
     Parameters
     ----------
     c_0_tuple : tuple
@@ -138,7 +139,7 @@ def rd_solve(
         Returns an tuple where entry i is a NumPy array containing
         the diffusion coefficient of species i at the grid points.
         c_tuple[i] is a NumPy array containing the concentrations of
-        species i at the grid poitns.
+        species i at the grid points.
     diff_coeff_params : arbitrary
         Tuple of parameters to be passed into diff_coeff_fun.
     rxn_fun : function
@@ -214,6 +215,31 @@ def rd_solve(
 
 def constant_diff_coeffs(c_tuple, t, x, diff_coeffs):
     """Function for use with `rd_solve()` for constant diffusion
-    coefficients."""
+    coefficients.
+
+    Parameters
+    ----------
+    c_tuple : tuple
+        c_tuple[i] is a NumPy array containing the concentrations of
+        species i at the grid points.
+    t : dummy argument
+        Dummy argument for the time.
+    x : dummy argument
+        Dummy argument for position.
+    diff_coeffs : tuple
+        diff_coeffs[i] is the diffusion coefficient of species i.
+
+    Returns
+    -------
+    output : tuple or NumPy arrays
+        A tuple containing the (constant) diffusion coeffient for all
+        species at all positions.
+
+    Notes
+    -----
+    .. The `t` and `x` arguments are dummy arguments so that the call
+       signature matches what is required by `rd_solve()`.
+
+    """
     n = len(c_tuple[0])
     return tuple([diff_coeffs[i] * np.ones(n) for i in range(len(c_tuple))])

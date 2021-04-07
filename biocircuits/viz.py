@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 import matplotlib.streamplot
@@ -9,266 +11,9 @@ import bokeh.models
 import bokeh.palettes
 import bokeh.plotting
 
-from . import utils
+import colorcet
 
-_default_palette = [
-    "#1f77b3",
-    "#ff7e0e",
-    "#2ba02b",
-    "#d62628",
-    "#9367bc",
-    "#8c564b",
-    "#e277c1",
-    "#7e7e7e",
-    "#bcbc21",
-    "#16bdcf",
-    "#3a0182",
-    "#004201",
-    "#0fffa8",
-    "#5d003f",
-    "#bcbcff",
-    "#d8afa1",
-    "#b80080",
-    "#004d52",
-    "#6b6400",
-    "#7c0100",
-    "#6026ff",
-    "#ffff9a",
-    "#564964",
-    "#8cb893",
-    "#93fbff",
-    "#018267",
-    "#90ff00",
-    "#8200a0",
-    "#ac8944",
-    "#5b3400",
-    "#ffbff2",
-    "#ff6e75",
-    "#798cff",
-    "#dd00ff",
-    "#505646",
-    "#004489",
-    "#ffbf60",
-    "#ff018c",
-    "#bdc8cf",
-    "#af97b5",
-    "#b65600",
-    "#017000",
-    "#cd87ff",
-    "#1cd646",
-    "#bfebc3",
-    "#7997b5",
-    "#a56089",
-    "#6e8956",
-    "#bc7c75",
-    "#8a2844",
-    "#00acff",
-    "#8ed4ff",
-    "#4b6d77",
-    "#00d4b1",
-    "#9300f2",
-    "#8a9500",
-    "#5d5b9e",
-    "#fddfba",
-    "#00939e",
-    "#ffdb00",
-    "#00aa79",
-    "#520067",
-    "#000091",
-    "#0a5d3d",
-    "#a5e275",
-    "#623b41",
-    "#c6c689",
-    "#ff9eb5",
-    "#cd4f6b",
-    "#ff07d6",
-    "#8a3a05",
-    "#7e3d70",
-    "#ff4901",
-    "#602ba5",
-    "#1c00ff",
-    "#e6dfff",
-    "#aa3baf",
-    "#d89c00",
-    "#a3a39e",
-    "#3f69ff",
-    "#46490c",
-    "#7b6985",
-    "#6b978c",
-    "#ff9a75",
-    "#835bff",
-    "#7c6b46",
-    "#80b654",
-    "#bc0049",
-    "#fd93ff",
-    "#5d0018",
-    "#89d1d1",
-    "#9c8cd3",
-    "#da6d42",
-    "#8a5700",
-    "#3b5069",
-    "#4b6b3b",
-    "#edcfd8",
-    "#cfedff",
-    "#aa1500",
-    "#dfff4f",
-    "#ff2a56",
-    "#d1499e",
-    "#707cb8",
-    "#598000",
-    "#00e4fd",
-    "#774b95",
-    "#67d48c",
-    "#3d3a72",
-    "#ac413f",
-    "#d6a166",
-    "#c169cd",
-    "#69595d",
-    "#87aced",
-    "#a0a569",
-    "#d1aae6",
-    "#870062",
-    "#00fddb",
-    "#672818",
-    "#b342ff",
-    "#0e59c4",
-    "#168742",
-    "#90d300",
-    "#cd7900",
-    "#f959ff",
-    "#5b7466",
-    "#8eaeb3",
-    "#9c7c8c",
-    "#4600c6",
-    "#6b4d2d",
-    "#a56d46",
-    "#9e8972",
-    "#a8afca",
-    "#cd8ca7",
-    "#00fd64",
-    "#917900",
-    "#ff62a1",
-    "#f4ffd8",
-    "#018cf0",
-    "#13aca0",
-    "#5b2d59",
-    "#89859e",
-    "#cfccba",
-    "#d4afc4",
-    "#dbdd6d",
-    "#cffff4",
-    "#006485",
-    "#006962",
-    "#a84167",
-    "#2d97c4",
-    "#a874ff",
-    "#26ba5d",
-    "#57b600",
-    "#caffa7",
-    "#a379aa",
-    "#ffbc93",
-    "#89e2c1",
-    "#0fc8ff",
-    "#d400c4",
-    "#626d89",
-    "#69858e",
-    "#4b4d52",
-    "#aa6067",
-    "#79b5d4",
-    "#2b5916",
-    "#9a0024",
-    "#bdd1f2",
-    "#896e67",
-    "#69a56b",
-    "#855467",
-    "#aecdba",
-    "#87997e",
-    "#cadb00",
-    "#9a0390",
-    "#ebbc1a",
-    "#eb9cd1",
-    "#70006e",
-    "#b1a131",
-    "#ca6b93",
-    "#4146a3",
-    "#e48c89",
-    "#d44400",
-    "#c68aca",
-    "#b69597",
-    "#d41f75",
-    "#724bcc",
-    "#674d00",
-    "#672138",
-    "#38564f",
-    "#6ebaaa",
-    "#853a31",
-    "#a5d397",
-    "#b8af8e",
-    "#d8e4df",
-    "#aa00df",
-    "#cac1db",
-    "#ffdf8c",
-    "#e2524d",
-    "#66696e",
-    "#ff001c",
-    "#522d72",
-    "#4d906b",
-    "#a86d11",
-    "#ff9e26",
-    "#5ea3af",
-    "#c88556",
-    "#915997",
-    "#a3a1ff",
-    "#fdbaba",
-    "#242a87",
-    "#dbe6a8",
-    "#97f2a7",
-    "#6793d6",
-    "#ba5b3f",
-    "#3a5d91",
-    "#364f2f",
-    "#267c95",
-    "#89959a",
-    "#cfb356",
-    "#004664",
-    "#5e5d2f",
-    "#8e8e41",
-    "#ac3f13",
-    "#69953b",
-    "#a13d85",
-    "#bfb6ba",
-    "#acc667",
-    "#6469cf",
-    "#91af00",
-    "#2be2da",
-    "#016e36",
-    "#ff7952",
-    "#42807e",
-    "#4fe800",
-    "#995428",
-    "#5d0a00",
-    "#a30057",
-    "#0c8700",
-    "#5982a7",
-    "#ffebfb",
-    "#4b6901",
-    "#8775d4",
-    "#e6c6ff",
-    "#a5ffda",
-    "#d86e77",
-    "#df014b",
-    "#69675b",
-    "#776ba1",
-    "#7e8067",
-    "#594685",
-    "#0000ca",
-    "#7c002a",
-    "#97ff72",
-    "#b5e2e1",
-    "#db52c8",
-    "#777734",
-    "#57bd8e",
-]
+from . import utils
 
 
 def _ecdf_vals(data, formal=False, complementary=False):
@@ -340,7 +85,8 @@ def ecdf(
     **kwargs,
 ):
     """
-    Create a plot of an ECDF.
+    Create a plot of an ECDF. DEPRECATED. Use iqplot.ecdf().
+
     Parameters
     ----------
     data : array_like
@@ -389,6 +135,11 @@ def ecdf(
     output : bokeh.plotting.Figure instance
         Plot populated with ECDF.
     """
+    warnings.warn(
+        "`biocircuits.ecdf()` is deprecated. Used `iqplot.ecdf()` instead.",
+        DeprecationWarning,
+    )
+
     # Check data to make sure legit
     data = utils._convert_data(data)
 
@@ -618,7 +369,7 @@ def xyt_plot(
         An interactive plot with a time slider.
     """
     if palette is None:
-        palette = _default_palette
+        palette = colorcet.b_glasbey_category10
 
     if glyph not in ["line", "circle"]:
         raise RuntimeError("Only 'line' or 'circle' glyphs allowed.")
@@ -851,7 +602,7 @@ def streamplot(
     arrow_level="underlay",
     **kwargs,
 ):
-    """Draws streamlines of a vector flow.
+    """Draws streamlines of a vector field.
 
     Parameters
     ----------
@@ -1518,14 +1269,6 @@ def imshow(
     im : bokeh.models.renderers.GlyphRenderer instance (optional)
         The GlyphRenderer instance of the image being displayed. This is
         only returned if `return_im` is True.
-
-    Notes
-    -----
-    .. The plot area is set to closely approximate square pixels, but
-       this is not always possible since Bokeh sets the plotting area
-       based on the entire plot, inclusive of ticks and titles. However,
-       if you choose `no_ticks` to be True, no tick or axes labels are
-       present, and the pixels are displayed as square.
     """
 
     # If a single channel in 3D image, flatten and check shape
@@ -1692,28 +1435,3 @@ def _display_clicks(div, attributes=[], style="float:left;clear:left;font_size=0
     """
         % (attributes, style),
     )
-
-
-def mpl_cmap_to_color_mapper(cmap):
-    """
-    Convert a Matplotlib colormap to a bokeh.models.LinearColorMapper
-    instance.
-
-    Parameters
-    ----------
-    cmap : str
-        A string giving the name of the color map.
-
-    Returns
-    -------
-    output : bokeh.models.LinearColorMapper instance
-        A linear color_mapper with 25 gradations.
-
-    Notes
-    -----
-    .. See https://matplotlib.org/examples/color/colormaps_reference.html
-       for available Matplotlib colormaps.
-    """
-    cm = mpl_get_cmap(cmap)
-    palette = [rgb_frac_to_hex(cm(i)[:3]) for i in range(256)]
-    return bokeh.models.LinearColorMapper(palette=palette)

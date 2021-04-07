@@ -1,5 +1,9 @@
 numpy
+scipy
 pandas
+numba
+tqdm
 bokeh
 matplotlib
+colorcet
 eqtk

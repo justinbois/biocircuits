@@ -1,16 +1,15 @@
 # biocircuits
 
-Utilities Caltech BE 150: Design Principles of Genetic Circuits
+Utilities to accompany *Biological Circuit Design* by Michael Elowitz and Justin Bois.
 
 
-## Installation / Usage
+## Installation
 
 To install use pip:
 
     pip install biocircuits
 
 
-Or clone the repo:
+## Documentation
 
-    git clone https://github.com/justinbois/biocircuits.git
-    python setup.py install
+You can access the docs from the [Biological Circuit Design website](https://biocircuits.github.io/package_docs/index.html).

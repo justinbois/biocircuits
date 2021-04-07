@@ -3,10 +3,10 @@ import scipy.integrate
 import scipy.interpolate
 
 
-def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
+def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=None):
     """Integrate a system of delay differential equations defined by
         y' = f(t, y, y(t-tau1), y(t-tau2), ...)
-    using the method of steps.
+    using the method of steps. All tau's are assumed constant.
 
     Parameters
     ----------
@@ -19,7 +19,7 @@ def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
             The current time.
         y_past : function, call signature y_past(t)
             Function used to compute values of y in the past. This is
-            not specified by the user, but called as, e.g., 
+            not specified by the user, but called as, e.g.,
             `y_past(t-tau)` within `func`. The function is automatically
             generated using interpolants.
         args : tuple
@@ -29,11 +29,11 @@ def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
     y0 : function, call signature y0(t, *y0_args)
         A function to compute the pre- time = t[0] values of `y`.
     t : array_like
-        The time points for which the solution of the DDEs is to be 
+        The time points for which the solution of the DDEs is to be
         returned.
-    tau : float
-        The longest of all the time delays. This defines the step length
-        for the method of steps.
+    tau : float or array_like
+        Set of time delays for DDEs. Only the shortest and longest are
+        used.
     args : tuple, default ()
         Tuple of arguments to be passed to `func`.
     y0_args : tuple, default ()
@@ -49,29 +49,43 @@ def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
 
     Notes
     -----
-    .. Uses `scipy.integrate.odeint()` to integrate each step. To 
+    .. Uses `scipy.integrate.odeint()` to integrate each step. To
        compute the values of `y` at time points from a previous step,
-       uses a cubic B-spline interpolant of the solution from the 
+       uses a cubic B-spline interpolant of the solution from the
        previous step.
     .. `n_time_points_per_step` may be adjusted downward if the value
        of `y` does not change rapidly for a given step, but should be
-       large if it does to to able to capture the dynamics.
+       large enough to be able to capture the dynamics.
 
     """
+    if np.isscalar(tau):
+        tau = np.array([tau])
+    else:
+        tau = np.array(tau)
+
+    if (tau <= 0).any():
+        raise RuntimeError("All tau's must be greater than zero.")
+
+    tau_short = np.min(tau)
+    tau_long = np.max(tau)
+
+    if n_time_points_per_step is None:
+        n_time_points_per_step = max(
+            int(1 + len(t) / (t.max() - t.min()) * tau_long), 20
+        )
+
     t0 = t[0]
-    y_dense = []
-    t_dense = []
 
     # Past function for the first step
-    y_past = lambda t: y0(t, *y0_args)
+    y_past = lambda time_point: y0(time_point, *y0_args)
 
     # Integrate first step
-    t_step = np.linspace(t0, t0 + tau, n_time_points_per_step)
+    t_step = np.linspace(t0, t0 + tau_short, n_time_points_per_step)
     y = scipy.integrate.odeint(func, y_past(t0), t_step, args=(y_past,) + args)
 
     # Store result from integration
-    y_dense.append(y[:-1, :])
-    t_dense.append(t_step[:-1])
+    y_dense = y.copy()
+    t_dense = t_step.copy()
 
     # Get dimension of problem for convenience
     n = y.shape[1]
@@ -79,27 +93,34 @@ def ddeint(func, y0, t, tau, args=(), y0_args=(), n_time_points_per_step=200):
     # Integrate subsequent steps
     j = 1
     while t_step[-1] < t[-1]:
+        t_start = max(t0, t_step[-1] - tau_long)
+        i = np.searchsorted(t_dense, t_start, side="left")
+        t_interp = t_dense[i:]
+        y_interp = y_dense[i:, :]
+
         # Make B-spline
-        tck = [scipy.interpolate.splrep(t_step, y[:, i]) for i in range(n)]
+        tck = [scipy.interpolate.splrep(t_interp, y_interp[:, i]) for i in range(n)]
 
         # Interpolant of y from previous step
-        y_past = lambda t: np.array(
-            [scipy.interpolate.splev(t, tck[i]) for i in range(n)]
+        y_past = (
+            lambda time_point: np.array(
+                [scipy.interpolate.splev(time_point, tck[i]) for i in range(n)]
+            )
+            if time_point > t0
+            else y0(time_point, *y0_args)
         )
 
         # Integrate this step
-        t_step = np.linspace(t0 + j * tau, t0 + (j + 1) * tau, n_time_points_per_step)
+        t_step = np.linspace(
+            t0 + j * tau_short, t0 + (j + 1) * tau_short, n_time_points_per_step
+        )
         y = scipy.integrate.odeint(func, y[-1, :], t_step, args=(y_past,) + args)
 
         # Store the result
-        y_dense.append(y[:-1, :])
-        t_dense.append(t_step[:-1])
+        y_dense = np.append(y_dense, y[1:, :], axis=0)
+        t_dense = np.append(t_dense, t_step[1:])
 
         j += 1
-
-    # Concatenate results from steps
-    y_dense = np.concatenate(y_dense)
-    t_dense = np.concatenate(t_dense)
 
     # Interpolate solution for returning
     y_return = np.empty((len(t), n))
