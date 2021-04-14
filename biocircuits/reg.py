@@ -13,7 +13,7 @@ def rep_hill(x, n):
     output : NumPy array or float
         1 / (1 + x**n)
     """
-    return 1 / (1 + x ** n)
+    return 1.0 / (1.0 + x ** n)
 
 
 def act_hill(x, n):
@@ -31,7 +31,7 @@ def act_hill(x, n):
     output : NumPy array or float
         x**n / (1 + x**n)
     """
-    return 1 - rep_hill(x, n)
+    return 1.0 - rep_hill(x, n)
 
 
 def aa_and(x, y, nx, ny):
@@ -54,7 +54,7 @@ def aa_and(x, y, nx, ny):
     output : NumPy array or float
         x**nx * y**ny / (1 + x**nx) / (1 + y**ny)
     """
-    return x ** nx * y ** ny / (1 + x ** nx) / (1 + y ** ny)
+    return x ** nx * y ** ny / (1.0 + x ** nx) / (1.0 + y ** ny)
 
 
 def aa_or(x, y, nx, ny):
@@ -75,9 +75,10 @@ def aa_or(x, y, nx, ny):
     Returns
     -------
     output : NumPy array or float
-        (x**nx + y**ny) / (1 + x**nx + y**ny)
+        (x**nx + y**ny + x**nx * y**ny) / (1 + x**nx) / (1 + y**ny)
     """
-    return (x ** nx + y ** ny) / (1 + x ** nx + y ** ny)
+    denom = (1.0 + x ** nx) * (1.0 + y ** ny)
+    return (denom - 1.0) / denom
 
 
 def rr_and(x, y, nx, ny):
@@ -100,7 +101,7 @@ def rr_and(x, y, nx, ny):
     output : NumPy array or float
         1 / (1 + x**nx) / (1 + y**ny)
     """
-    return 1 / (1 + x ** nx) / (1 + y ** ny)
+    return 1.0 / (1.0 + x ** nx) / (1.0 + y ** ny)
 
 
 def rr_or(x, y, nx, ny):
@@ -123,7 +124,7 @@ def rr_or(x, y, nx, ny):
     output : NumPy array or float
         (1 + x**nx + y**ny) / (1 + x**nx) / (1 + y**ny)
     """
-    return (1 + x ** nx + y ** ny) / (1 + x ** nx) / (1 + y ** ny)
+    return (1.0 + x ** nx + y ** ny) / (1.0 + x ** nx) / (1.0 + y ** ny)
 
 
 def ar_and(x, y, nx, ny):
@@ -147,7 +148,7 @@ def ar_and(x, y, nx, ny):
     output : NumPy array or float
         x ** nx / (1 + x**nx) / (1 + y**ny)
     """
-    return x ** nx / (1 + x ** nx) / (1 + y ** ny)
+    return x ** nx / (1.0 + x ** nx) / (1.0 + y ** ny)
 
 
 def ar_or(x, y, nx, ny):
@@ -171,4 +172,4 @@ def ar_or(x, y, nx, ny):
     output : NumPy array or float
         (1 + x**nx + x**nx * y**ny)) / (1 + x**nx) / (1 + y**ny)
     """
-    return (1 + x**nx * (1 + y**ny)) / (1 + x ** nx) / (1 + y ** ny)
+    return (1.0 + x**nx * (1.0 + y**ny)) / (1.0 + x ** nx) / (1.0 + y ** ny)

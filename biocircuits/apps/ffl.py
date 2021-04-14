@@ -10,6 +10,7 @@ import bokeh.plotting
 
 import colorcet
 
+
 def _ffl_rhs(beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic):
     """Return a function with call signature fun(yz, x) that computes
     the right-hand side of the dynamical system for an FFL. Here,
@@ -96,6 +97,7 @@ def _plot_ffl(
     t_step_down=10.0,
     x_0=1.0,
     normalized=False,
+    **kwargs,
 ):
     yz = _solve_ffl(
         beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic, t, t_step_down, x_0
@@ -122,12 +124,19 @@ def _plot_ffl(
         z /= z.max()
 
     # Set up figure
+    frame_height = kwargs.pop("frame_height", 175)
+    frame_width = kwargs.pop("frame_width", 550)
+    x_axis_label = kwargs.pop("x_axis_label", "dimensionless time")
+    y_axis_label = kwargs.pop(
+        "y_axis_label", f"{'norm. ' if normalized else ''}dimensionless conc."
+    )
+    x_range = kwargs.pop("x_range", [t.min(), t.max()])
     p = bokeh.plotting.figure(
-        frame_height=175,
-        frame_width=550,
-        x_axis_label="dimensionless time",
-        y_axis_label=f"{'norm. ' if normalized else ''}dimensionless conc.",
-        x_range=[t.min(), t.max()],
+        frame_height=frame_height,
+        frame_width=frame_width,
+        x_axis_label=x_axis_label,
+        y_axis_label=y_axis_label,
+        x_range=x_range,
     )
 
     # Column data sources
@@ -212,7 +221,7 @@ def _ffl_widgets():
                 f"{x}-FFL" for x in ["C1", "C2", "C3", "C4", "I1", "I2", "I3", "I4"]
             ],
             value="C1-FFL",
-            width=125
+            width=125,
         ),
         logic_selector=bokeh.models.RadioButtonGroup(
             name="Logic", labels=["AND", "OR"], active=0, width=125
@@ -223,7 +232,9 @@ def _ffl_widgets():
         x_0_slider=bokeh.models.Slider(
             title="x₀", start=0.1, end=10, step=0.1, value=1, width=125
         ),
-        normalize_toggle=bokeh.models.Toggle(label="Normalize", active=False, width=125)
+        normalize_toggle=bokeh.models.Toggle(
+            label="Normalize", active=False, width=125
+        ),
     )
 
     return widgets
@@ -268,6 +279,7 @@ def ffl_app():
        ```
        You may need to change the `notebook_url` as necessary.
     """
+
     def app(doc):
         p, cds, cds_x = _plot_ffl()
         widgets = _ffl_widgets()
@@ -299,15 +311,21 @@ def ffl_app():
 
         sliders = bokeh.layouts.row(
             bokeh.layouts.Spacer(width=30),
-            bokeh.layouts.column(widgets["beta_slider"], widgets["gamma_slider"], widgets["kappa_slider"]),
+            bokeh.layouts.column(
+                widgets["beta_slider"], widgets["gamma_slider"], widgets["kappa_slider"]
+            ),
             bokeh.layouts.Spacer(width=10),
-            bokeh.layouts.column(widgets["n_xy_slider"], widgets["n_xz_slider"], widgets["n_yz_slider"]),
+            bokeh.layouts.column(
+                widgets["n_xy_slider"], widgets["n_xz_slider"], widgets["n_yz_slider"]
+            ),
             bokeh.layouts.Spacer(width=10),
             bokeh.layouts.column(widgets["t_step_down_slider"], widgets["x_0_slider"]),
         )
 
         selectors = bokeh.layouts.column(
-            widgets["ffl_selector"], widgets["logic_selector"], widgets["normalize_toggle"],
+            widgets["ffl_selector"],
+            widgets["logic_selector"],
+            widgets["normalize_toggle"],
         )
 
         # Final layout
