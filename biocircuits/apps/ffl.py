@@ -52,7 +52,7 @@ def _ffl_rhs(beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic):
     return rhs
 
 
-def _solve_ffl(beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic, t, t_step_down, x_0):
+def solve_ffl(beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic, t, t_step_down, x_0):
     """Solve an FFL. The dynamics are given by
     `rhs`, the output of `ffl_rhs()`.
     """
@@ -84,7 +84,7 @@ def _solve_ffl(beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic, t, t_step_down,
         return np.vstack((yz_during_step[:-1, :], yz_after_step[1:, :]))
 
 
-def _plot_ffl(
+def plot_ffl(
     beta=1.0,
     gamma=1.0,
     kappa=1.0,
@@ -99,7 +99,7 @@ def _plot_ffl(
     normalized=False,
     **kwargs,
 ):
-    yz = _solve_ffl(
+    yz = solve_ffl(
         beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic, t, t_step_down, x_0
     )
     y, z = yz.transpose()
@@ -175,7 +175,7 @@ def _ffl_callback(
     t = np.linspace(0, p.x_range.end, 400)
 
     # Solve the dynamics
-    yz = _solve_ffl(
+    yz = solve_ffl(
         beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic, t, t_step_down, x_0
     )
     y, z = yz.transpose()
@@ -281,7 +281,7 @@ def ffl_app():
     """
 
     def app(doc):
-        p, cds, cds_x = _plot_ffl()
+        p, cds, cds_x = plot_ffl()
         widgets = _ffl_widgets()
 
         def _callback(attr, old, new):
