@@ -1,4 +1,8 @@
-import multiprocessing
+try:
+    import multiprocess
+except:
+    import multiprocessing as multiprocess
+
 import warnings
 
 import numpy as np
@@ -470,7 +474,7 @@ def gillespie_ssa(
             progress_bar,
         )
 
-        with multiprocessing.Pool(n_threads) as p:
+        with multiprocess.Pool(n_threads) as p:
             results = p.map(_gillespie_multi_fn, [input_args] * n_threads)
 
         pops = [results[i][0][k] for i in range(n_threads) for k in range(size)]
