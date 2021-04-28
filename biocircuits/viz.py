@@ -213,7 +213,7 @@ def interactive_xy_plot(
     base_plot, callback, slider_params=(), toggle_params=(), extra_args=()
 ):
     """
-    Create an interactive x-y plot in Bokeh.
+    Create an interactive x-y plot in Bokeh. DEPRECATED.
 
     Parameters
     ----------
@@ -265,6 +265,10 @@ def interactive_xy_plot(
     output : Bokeh application
         A Bokeh application with sliders, toggles, and a plot.
     """
+    warnings.warn(
+        DeprecationWarning,
+        "`interactive_xy_plot() is deprecated. Either custom build an interactive plot with base Bokeh or use Panel.",
+    )
 
     def _plot_app(doc):
         # Build the initial plot and data source
@@ -680,9 +684,7 @@ def streamplot(
             p.add_layout(
                 bokeh.models.Arrow(
                     line_alpha=0,
-                    end=bokeh.models.NormalHead(
-                        fill_color=color, line_alpha=0, size=7
-                    ),
+                    end=bokeh.models.NormalHead(fill_color=color, line_alpha=0, size=7),
                     x_start=tail[0],
                     y_start=tail[1],
                     x_end=head[0],
@@ -962,9 +964,7 @@ def _zoomable_phase_portrait(
         arrows = [
             bokeh.models.Arrow(
                 line_alpha=0,
-                end=bokeh.models.NormalHead(
-                    fill_color=color, line_alpha=0, size=7
-                ),
+                end=bokeh.models.NormalHead(fill_color=color, line_alpha=0, size=7),
                 x_start=tail[0],
                 y_start=tail[1],
                 x_end=head[0],
@@ -997,7 +997,6 @@ def _zoomable_phase_portrait(
 
             for arrow in arrows:
                 p.add_layout(arrow)
-
 
         def _callback(attr, old, new):
             # Set up u,v space
@@ -1063,9 +1062,7 @@ def _zoomable_phase_portrait(
                         bokeh.models.Arrow(
                             line_alpha=0,
                             end=bokeh.models.NormalHead(
-                                fill_color=color,
-                                line_alpha=0,
-                                size=7,
+                                fill_color=color, line_alpha=0, size=7,
                             ),
                             x_start=tail[0],
                             y_start=tail[1],

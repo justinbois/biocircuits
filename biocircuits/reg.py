@@ -221,7 +221,7 @@ def ar_or(x, y, nx, ny):
     output : NumPy array or float
         (1 + x**nx + x**nx * y**ny)) / (1 + x**nx) / (1 + y**ny)
     """
-    return (1.0 + x**nx * (1.0 + y**ny)) / (1.0 + x ** nx) / (1.0 + y ** ny)
+    return (1.0 + x ** nx * (1.0 + y ** ny)) / (1.0 + x ** nx) / (1.0 + y ** ny)
 
 
 def ar_and_single(x, y, nx, ny):
@@ -269,4 +269,4 @@ def ar_or_single(x, y, nx, ny):
     output : NumPy array or float
         (1 + x**nx) / (1 + x**nx + y**ny)
     """
-    return (1.0 + x**nx) / (1.0 + x ** nx + y ** ny)
+    return (1.0 + x ** nx) / (1.0 + x ** nx + y ** ny)
