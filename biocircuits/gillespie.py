@@ -455,13 +455,14 @@ def gillespie_ssa(
             args=args,
             progress_bar=progress_bar,
         )
+
         if return_time_points:
             return pop, time
         else:
             if len(pop) == 1:
                 return pop[0].reshape((1, *pop[0].shape))
             else:
-                return np.concatenate(pop, axis=0)
+                return np.stack(pop, axis=0)
     else:
         input_args = (
             propensity_func,
