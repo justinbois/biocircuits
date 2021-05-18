@@ -462,30 +462,28 @@ def xyt_plot(
     # Callback
     js_code = """
 function sortedIndex(array, value) {
-    var low = 0,
+    let low = 0,
         high = array.length;
 
     while (low < high) {
-        var mid = (low + high) >>> 1;
+        let mid = (low + high) >>> 1;
         if (array[mid] < value) low = mid + 1;
         else high = mid;
     }
     return low;
 }
 
-var x = source_plot.data['x'];
-var x_len = x.length;
-var t = source_t.data['t'];
+let x = source_plot.data['x'];
+let x_len = x.length;
+let t = source_t.data['t'];
 
-var i = sortedIndex(t, cb_obj.value);
-
-var k;
+let i = sortedIndex(t, cb_obj.value);
 """
 
     for var_name in ["y_" + str(j) for j in range(len(y))]:
-        js_code += f"""var {var_name} = source_plot.data['{var_name}'];
-var {var_name}_source = source.data['{var_name}'];
-for (k = 0; k < x_len; k++) {var_name}[k] = {var_name}_source[x_len * i + k];
+        js_code += f"""let {var_name} = source_plot.data['{var_name}'];
+let {var_name}_source = source.data['{var_name}'];
+for (let k = 0; k < x_len; k++) {var_name}[k] = {var_name}_source[x_len * i + k];
 
 """
 
@@ -498,7 +496,9 @@ for (k = 0; k < x_len; k++) {var_name}[k] = {var_name}_source[x_len * i + k];
 
     t_slider.js_on_change("value", callback)
 
-    return bokeh.layouts.column(t_slider, p)
+    return bokeh.layouts.column(
+        bokeh.layouts.row(bokeh.models.Spacer(width=10), t_slider), p
+    )
 
 
 def phase_portrait(
