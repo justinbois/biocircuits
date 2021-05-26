@@ -17,6 +17,13 @@ function zeros(n) {
 }
 
 
+function nanArray(n) {
+	var x = [];
+	for (var i = 0; i < n; i++) x.push(NaN);
+	return x;
+}
+
+
 function transpose(A) {
 	var m = A.length;
 	var n = A[0].length;
@@ -74,14 +81,8 @@ function vectorVectorAdd(v1, v2) {
 
 
 function vectorAdd() {
-	if (v1.length !== v2.length) {
-		console.warn('v1 and v2 are not the same length in vectorVectorAdd.')
-		return null;
-	}
-
-	m = arguments[0].length;
-	n = arguments.length;
-
+	var m = arguments[0].length;
+	var n = arguments.length;
 
 	var result = [];
 	for (var i = 0; i < m; i++) {
@@ -89,10 +90,36 @@ function vectorAdd() {
 		for (var j = 0; j < n; j++) {
 			element += arguments[j][i];
 		}
-		result.push(element)
+		result.push(element);
 	}
 
 	return result;
+}
+
+
+function svMultAdd(scalars, vectors) {
+	/*
+	 * Add a set of vectors together, each multiplied by a scalar.
+	 */
+
+	var m = vectors[0].length;
+	var n = scalars.length;
+
+	if (vectors.length != n) {
+		console.warn('svMultAdd: Difference number of scalars and vectors.')
+		return null;
+	}
+
+	var result = [];
+	for (var i = 0; i < m; i++) {
+		var element = 0.0;
+		for (var j = 0; j < n; j++) {
+			element += scalars[j] * vectors[j][i];
+		}
+		result.push(element);
+	}
+
+	return result;	
 }
 
 
@@ -106,18 +133,7 @@ function absVector(v) {
 }
 
 
-function lotkaVolterra(xy, t, alpha, beta, gamma, delta) {
-	// Unpack
-	var [x, y] = xy;
-
-	var dxdt = alpha * x - beta * x * y;
-	var dydt = delta * x * y - gamma * y;
-
-	return [dxdt, dydt];
-}
-
-
-function rkf45(f, initialCondition, timePoints, args, dt, tol, sBounds, hMin) {
+function rkf45(f, initialCondition, timePoints, args, dt, tol, sBounds, hMin, enforceNonnegative, maxDeadSteps) {
 	// Set up return variables
 	var tSol = [timePoints[0]];
 	var t = timePoints[0];
@@ -125,6 +141,8 @@ function rkf45(f, initialCondition, timePoints, args, dt, tol, sBounds, hMin) {
 	var y = [initialCondition];
 	var y0 = initialCondition;
 	var i = 1;
+	var nDeadSteps = 0;
+	var deadStep = false;
 
 	// Default parameters
 	if (dt === undefined) {
@@ -146,9 +164,24 @@ function rkf45(f, initialCondition, timePoints, args, dt, tol, sBounds, hMin) {
 		hMin = 0.0;
 	}
 
-	while (i < iMax) {
-		while (t < timePoints[i]) {
-			[y0, t, h] = rkf45Step(f, y0, t, args, h, tol, sBounds, hMin);
+	if (enforceNonnegative === undefined) {
+		enforceNonnegative = true;
+	}
+
+	if (maxDeadSteps === undefined) {
+		maxDeadSteps = 10;
+	}
+
+	while (i < iMax && nDeadSteps < maxDeadSteps) {
+		nDeadSteps = 0;
+		while (t < timePoints[i] && nDeadSteps < maxDeadSteps) {
+			[y0, t, h, deadStep] = rkf45Step(f, y0, t, args, h, tol, sBounds, hMin);
+			nDeadSteps = deadStep ? nDeadSteps + 1 : 0;
+			if (enforceNonnegative) {
+				y0 = y0.map(function(x) {
+					if (x < 0.0) return 0.0; else return x;
+				})
+			}
 		}
 		if (t > tSol[tSol.length - 1]) {
 			y.push(y0);
@@ -157,6 +190,9 @@ function rkf45(f, initialCondition, timePoints, args, dt, tol, sBounds, hMin) {
 		i += 1;
 	}
 
+	if (nDeadSteps == maxDeadSteps) {
+		return nanArray(iMax);
+	}
 	var yInterp = interpolateSolution(timePoints, tSol, transpose(y));
 
 	return yInterp;
@@ -166,69 +202,60 @@ function rkf45(f, initialCondition, timePoints, args, dt, tol, sBounds, hMin) {
 function rkf45Step(f, y, t, args, h, tol, sBounds, hMin) {
 	var k1 = svMult(h , f(y, t, ...args));
 
-    var y2 = vectorVectorAdd(svMult(0.25, k1), y);
+	var y2 = svMultAdd([0.25, 1.0], [k1, y]);
     var k2 = svMult(h, f(y2, t + 0.25 * h, ...args));
 
-    var kadd = vectorVectorAdd(svMult(3.0, k1), svMult(9.0, k2));
-    kadd = svMult(1.0 / 32.0, kadd);
-    var y3 = vectorVectorAdd(kadd, y);
+    var y3 = svMultAdd([0.09375, 0.28125, 1.0], [k1, k2, y]);
     var k3 = svMult(h, f(y3, t + 0.375 * h, ...args));
 
-    kadd = vectorVectorAdd(svMult(1932.0, k1), svMult(-7200.0, k2));
-    kadd = vectorVectorAdd(kadd, svMult(7296.0, k3));
-    kadd = svMult(1.0 / 2197.0, kadd);
-    var y4 = vectorVectorAdd(kadd, y);
+    var y4 = svMultAdd(
+    	[1932.0 / 2197.0, -7200.0 / 2197.0, 7296.0 / 2197.0, 1.0],
+    	[k1, k2, k3, y]
+    );
     var k4 = svMult(h, f(y4, t + 12.0 * h / 13.0, ...args));
 
-    kadd = vectorVectorAdd(svMult(8341.0, k1), svMult(-32832.0, k2));
-    kadd = vectorVectorAdd(kadd, svMult(29440.0, k3));
-    kadd = vectorVectorAdd(kadd, svMult(-845.0, k4));
-    kadd = svMult(1.0 / 4104.0, kadd);
-    var y5 = vectorVectorAdd(kadd, y);
+    var y5 = svMultAdd(
+    	[8341.0 / 4104.0, -32832.0 / 4104.0, 29440.0 / 4104.0, -845.0 / 4104.0, 1.0],
+    	[k1, k2, k3, k4, y]
+    );
     var k5 = svMult(h, f(y5, t + h, ...args));
 
-    kadd = vectorVectorAdd(svMult(-6080.0, k1), svMult(41040.0, k2));
-    kadd = vectorVectorAdd(kadd, svMult(-28352.0, k3));
-    kadd = vectorVectorAdd(kadd, svMult(9295.0, k4));
-    kadd = vectorVectorAdd(kadd, svMult(-5643.0, k5));
-    kadd = svMult(1.0 / 20520.0, kadd);
-    var y6 = vectorVectorAdd(kadd, y);
+    var y6 = svMultAdd(
+    	[-6080.0 / 20520.0, 
+    	 41040.0 / 20520.0, 
+    	 -28352.0 / 20520.0, 
+    	 9295.0 / 20520.0, 
+    	 -5643.0 / 20520.0,
+    	 1.0],
+    	[k1, k2, k3, k4, k5, y]
+    );
     var k6 = svMult(h, f(y6, t + h / 2.0, ...args));
 
-	// Calculate error
-	var k1Err = svMult(209.0, k1);
-	// k2Err is zero
-	var k3Err = svMult(-2252.8, k3);
-	var k4Err = svMult(-2197.0, k4);
-	var k5Err = svMult(1504.8, k5);
-	var k6Err = svMult(2736.0, k6);
-
-	var errorVector = vectorVectorAdd(k1Err, k3Err);
-	errorVector = vectorVectorAdd(errorVector, k4Err);
-	errorVector = vectorVectorAdd(errorVector, k5Err);
-	errorVector = vectorVectorAdd(errorVector, k6Err);
-	errorVector = svMult(1.0 / 75240.0, errorVector);
+	// Calculate error (note that k2's contribution to the error is zero)
+	var errorVector = svMultAdd(
+		[209.0 / 75240.0, 
+		 -2252.8 / 75240.0, 
+		 -2197.0 / 75240.0, 
+		 1504.8 / 75240.0, 
+		 2736.0 / 75240.0],
+		[k1, k3, k4, k5, k6]);
 	var error = Math.max(...absVector(errorVector));
 
     // Either don't take a step or use the RK4 step
     if (error < tol || h <= hMin){
-    	// Calculate new step
-		var y1Step = svMult(2375.0, k1);
-		// y2Step is zero
-		var y3Step = svMult(11264.0, k3);
-		var y4Step = svMult(10985.0, k4);
-		var y5Step = svMult(-4104.0, k5);
-
-		var yStep = vectorVectorAdd(y1Step, y3Step);
-		yStep = vectorVectorAdd(yStep, y4Step);
-		yStep = vectorVectorAdd(yStep, y5Step);
-		yStep = svMult(1.0 / 20520.0, yStep);
-
-        var yNew = vectorVectorAdd(y, yStep);
+    	var yNew = svMultAdd(
+    		[2375.0 / 20520.0, 
+    		 11264.0 / 20520.0, 
+    		 10985.0 / 20520.0, 
+    		 -4104.0 / 20520.0,
+    		 1.0],
+    		[k1, k3, k4, k5, y]);
         t += h;
+        var deadStep = false;
     }
     else {
         var yNew = y;
+        var deadStep = true;
     }
 
     // Compute scaling for new step size
@@ -247,7 +274,7 @@ function rkf45Step(f, y, t, args, h, tol, sBounds, hMin) {
     }
 
     // Return new y-values, new time, and updated step size h
-    return [yNew, t, Math.max(s * h, hMin)];
+    return [yNew, t, Math.max(s * h, hMin), deadStep];
 }
 
 
