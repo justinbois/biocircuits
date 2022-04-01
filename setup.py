@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-__version__ = '0.1.5'
+__version__ = '0.1.6'
 
 here = path.abspath(path.dirname(__file__))
 
@@ -20,7 +20,7 @@ dependency_links = [x.strip().replace('git+', '') for x in all_reqs if x.startsw
 setup(
     name='biocircuits',
     version=__version__,
-    description='Python utilities for the Caltech course BE 150: Design Principles of Genetic Circuits',
+    description='Utilities to accompany *Biological Circuit Design* by Michael Elowitz and Justin Bois.',
     long_description=long_description,
     url='https://github.com/justinbois/biocircuits',
     download_url='https://github.com/justinbois/biocircuits/tarball/' + __version__,

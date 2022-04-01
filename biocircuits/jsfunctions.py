@@ -1218,6 +1218,10 @@ function dRepHill(x, n) {
 //   act_hill
 // };
 """,
+    "autorepressor_response_to_pulse": """
+function ode_rhs....
+CONTINUE HERE.
+""",
     "gaussian_pulse": """
 function sPulse(t, t0, tau) {
 	return Math.exp(-4.0 * Math.pow((t - t0) / tau, 2));
