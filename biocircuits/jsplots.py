@@ -57,6 +57,372 @@ def _sin_plot():
     return layout
 
 
+def gaussian_pulse():
+    """Make a plot of a Gaussian pulse/
+    """
+    # t/s data for plotting
+    t_0 = 4.0
+    tau = 2.0
+    t = np.linspace(0, 10, 200)
+    s = np.exp(-4 * (t - t_0) ** 2 / tau ** 2)
+
+    # Place the data in a ColumnDataSource
+    cds = bokeh.models.ColumnDataSource(dict(t=t, s=s))
+
+    # Build the plot
+    p = bokeh.plotting.figure(
+        frame_height=200,
+        frame_width=400,
+        x_axis_label="time",
+        y_axis_label="input signal",
+        x_range=[0, 10],
+        y_range=[-0.02, 1.1],
+    )
+    p.line(source=cds, x="t", y="s", line_width=2)
+
+    t0_slider = bokeh.models.Slider(
+        title="t₀", start=0, end=10, step=0.01, value=4.0, width=150
+    )
+    tau_slider = bokeh.models.Slider(
+        title="τ", start=0, end=10, step=0.01, value=2.0, width=150
+    )
+
+    # JavaScript callback
+    js_code = jsfuns["gaussian_pulse"] + "callback()"
+    callback = bokeh.models.CustomJS(
+        args=dict(cds=cds, t0_slider=t0_slider, tau_slider=tau_slider), code=js_code,
+    )
+    t0_slider.js_on_change("value", callback)
+    tau_slider.js_on_change("value", callback)
+
+    # Lay out and return
+    return bokeh.layouts.row(
+        p, bokeh.models.Spacer(width=30), bokeh.layouts.column(t0_slider, tau_slider)
+    )
+
+
+def autorepressor_response_to_pulse():
+    """Make an interactive plot of the response of an autorepressive
+    circuit's response to a Gaussian pulse of induction. Also overlay
+    response of unregulated circuit and approximate pulse itself.
+    """
+    def neg_auto_rhs_s_fun(x, t, beta0, gamma, k, n, ks, ns, s_fun, s_args):
+        """
+        Right hand side for negative autoregulation function, with s variable.
+        Returns dx/dt.
+
+        s_fun is a function of the form s_fun(t, *s_args), so s_args is a tuple
+        containing the arguments to pass to s_fun.
+        """
+        # Compute s
+        s = s_fun(t, *s_args)
+
+        # Correct for x possibly being numerically negative as odeint() adjusts step size
+        x = np.maximum(0, x)
+
+        # Plug in this value of s to the RHS of the negative autoregulation model
+        return neg_auto_rhs(x, t, beta0, gamma, k, n, ks, ns, s)
+
+    def unreg_rhs(x, t, beta0, gamma, ks, ns, s):
+        """
+        Right hand side for constitutive gene expression
+        modulated to only be active in the presence of s.
+        Returns dx/dt.
+        """
+        return beta0 * (s / ks) ** ns / (1 + (s / ks) ** ns) - gamma * x
+
+
+    def unreg_rhs_s_fun(x, t, beta0, gamma, ks, ns, s_fun, s_args):
+        """
+        Right hand side for unregulated function, with s variable.
+        Returns dx/dt.
+
+        s_fun is a function of the form s_fun(t, *s_args), so s_args is a tuple
+        containing the arguments to pass to s_fun.
+        """
+        # Compute s
+        s = s_fun(t, *s_args)
+
+        # Plug in this value of s to the RHS of the negative autoregulation model
+        return unreg_rhs(x, t, beta0, gamma, ks, ns, s)
+
+
+    def s_pulse(t, t_0, tau):
+        """
+        Returns s value for a pulse centered at t_0 with duration tau.
+        """
+        # Return 0 is tau is zero, otherwise Gaussian
+        return 0 if tau == 0 else np.exp(-4 * (t - t_0) ** 2 / tau ** 2)
+
+
+    # Set up initial parameters
+    # Time points we want for the solution
+    t = np.linspace(0, 10, 200)
+
+    # Initial condition
+    x0 = 0.0
+
+    # Parameters
+    beta0 = 100
+    gamma = 1
+    k = 0.5
+    n = 1
+    s = 100
+    ns = 10
+    ks = 0.1
+    s_args = (4.0, 2.0)
+    args = (beta0, gamma, k, n, ks, ns, s_pulse, s_args)
+    args_unreg = (beta0, gamma, ks, ns, s_pulse, s_args)
+
+    # Integrate ODE
+    x = scipy.integrate.odeint(neg_auto_rhs_s_fun, x0, t, args=args)
+    x = x.transpose()[0]
+    x_unreg = scipy.integrate.odeint(unreg_rhs_s_fun, x0, t, args=args_unreg)
+    x_unreg = x_unreg.transpose()[0]
+
+    # also calculate the input
+    s = s_pulse(t, *s_args)
+
+    # Normalize time courses
+    x /= x.max()
+    x_unreg /= x_unreg.max()
+
+    # set up the column data source
+    cds = bokeh.models.ColumnDataSource(dict(t=t, x=x, s=s, x_unreg=x_unreg))
+
+    # set up plot
+    p = bokeh.plotting.figure(
+        frame_width=375,
+        frame_height=250,
+        x_axis_label="time",
+        y_axis_label="normalized concentration",
+        x_range=[t.min(), t.max()],
+    )
+
+    # Populate glyphs
+    p.line(source=cds, x="t", y="x", line_width=2, color=colors[1], legend_label="x neg. auto.")
+    p.line(source=cds, x="t", y="x_unreg", line_width=2, color=colors[2], legend_label="x unreg.")
+    p.line(source=cds, x="t", y="s", line_width=2, color=colors[0], legend_label="s")
+
+    # Place the legend
+    p.legend.location = "top_left"
+
+    # Build the widgets
+    log_beta0_slider = bokeh.models.Slider(
+        title="log₁₀ β₀", start=-1, end=2, step=0.1, value=np.log10(beta0), width=150
+    )
+    log_gamma_slider = bokeh.models.Slider(
+        title="log₁₀ γ", start=-1, end=2, step=0.1, value=np.log10(gamma), width=150
+    )
+    log_k_slider = bokeh.models.Slider(
+        title="log₁₀ k", start=-1, end=2, step=0.1, value=np.log10(k), width=150
+    )
+    n_slider = bokeh.models.Slider(
+        title="n", start=0.1, end=10, step=0.1, value=2, width=150
+    )
+    log_ks_slider = bokeh.models.Slider(
+        title="log₁₀ kₛ", start=-2, end=2, step=0.1, value=np.log10(ks), width=150
+    )
+    ns_slider = bokeh.models.Slider(
+        title="nₛ", start=0.1, end=10, step=0.1, value=10, width=150
+    )
+    t0_slider = bokeh.models.Slider(
+        title="t₀", start=0.01, end=10, step=0.01, value=4.0, width=150
+    )
+    tau_slider = bokeh.models.Slider(
+        title="τ", start=0.01, end=10, step=0.01, value=2.0, width=150
+    )
+    normalize_toggle = bokeh.models.Toggle(label='Normalize', active=True, width=50)
+    legend_toggle = bokeh.models.Toggle(label='Legend', active=True, width=50)
+
+def autoactivator_fixed_points():
+    """Make an interactive plot of fixed points for a potentially
+    bistable autoactivator circuit.
+    """
+    # Parameters for first plot
+    beta = 10
+    k = 3
+    n = 5
+    gamma = 1
+
+    # Theroetical curves
+    x = np.linspace(0, 20, 400)
+    fp = beta * (x / k) ** n / (1 + (x / k) ** n)
+    fd = gamma * x
+
+    # Set up sliders
+    params = [
+        dict(
+            name="γ", start=0.1, end=4, step=0.1, value=gamma, long_name="gamma_slider",
+        ),
+        dict(
+            name="β", start=0.1, end=15, step=0.1, value=beta, long_name="beta_slider",
+        ),
+        dict(name="k", start=1, end=5, step=0.1, value=k, long_name="k_slider"),
+        dict(name="n", start=0.1, end=10, step=0.1, value=n, long_name="n_slider"),
+    ]
+    sliders = [
+        bokeh.models.Slider(
+            start=param["start"],
+            end=param["end"],
+            value=param["value"],
+            step=param["step"],
+            title=param["name"],
+            width=100,
+        )
+        for param in params
+    ]
+
+    # Build plot
+    p = bokeh.plotting.figure(
+        frame_height=200,
+        frame_width=300,
+        x_axis_label="x",
+        y_axis_label="production or removal rate",
+        y_range=[-1, 16],
+        x_range=[-1, 16],
+        toolbar_location="above",
+    )
+
+    # Column data source for curves
+    cds = bokeh.models.ColumnDataSource(dict(x=x, fp=fp, fd=fd))
+    p.line(source=cds, x="x", y="fp", line_width=2)
+    p.line(source=cds, x="x", y="fd", line_width=2, color="orange")
+
+    # Column data sources for stable and unstable fixed points.
+    # Values for initial parameters hard-coded to save coding up fixed-
+    # point finding in Python; already done in JS code
+    cds_fp_stable = bokeh.models.ColumnDataSource(dict(x=[0, 9.97546], y=[0, 9.97546]))
+    cds_fp_unstable = bokeh.models.ColumnDataSource(dict(x=[2.37605], y=[2.37605]))
+    p.circle(source=cds_fp_stable, x="x", y="y", color="black", size=10)
+    p.circle(
+        source=cds_fp_unstable,
+        x="x",
+        y="y",
+        line_color="black",
+        line_width=2,
+        fill_color="white",
+        size=10,
+    )
+
+    # JavaScript callback, updates fixed points using Newton's method
+    js_code = js_code = (
+        jsfuns["rootfinding"] + jsfuns["autoactivator_fixed_points"] + "callback()"
+    )
+
+    callback = bokeh.models.CustomJS(
+        args=dict(
+            cds=cds, cds_fp_stable=cds_fp_stable, cds_fp_unstable=cds_fp_unstable
+        ),
+        code=js_code,
+    )
+
+    # Use the `js_on_change()` method to call the custom JavaScript code.
+    for param, slider in zip(params, sliders):
+        callback.args[param["long_name"]] = slider
+        slider.js_on_change("value", callback)
+
+    # Lay out and return
+    return bokeh.layouts.row(
+        p,
+        bokeh.models.Spacer(width=30),
+        bokeh.layouts.column([bokeh.models.Spacer(height=20)] + sliders),
+    )
+
+
+def toggle_nullclines():
+    """Make an interactive plot of nullclines and fixed points of
+    the Gardner-Collins synthetic toggle switch.
+    """
+    # Set up sliders
+    params = [
+        dict(
+            name="βx", start=0.1, end=20, step=0.1, value=10, long_name="beta_x_slider",
+        ),
+        dict(
+            name="βy", start=0.1, end=20, step=0.1, value=10, long_name="beta_y_slider",
+        ),
+        dict(name="n", start=1, end=10, step=0.1, value=4, long_name="n_slider"),
+    ]
+    sliders = [
+        bokeh.models.Slider(
+            start=param["start"],
+            end=param["end"],
+            value=param["value"],
+            step=param["step"],
+            title=param["name"],
+            width=150,
+        )
+        for param in params
+    ]
+
+    # Build base plot with starting parameters
+    beta = 10
+    n = 4
+
+    # Compute nullclines
+    x_y = np.linspace(0, 20, 400)
+    y_x = np.linspace(0, 20, 400)
+    x_x = beta / (1 + y_x ** n)
+    y_y = beta / (1 + x_y ** n)
+
+    cds = bokeh.models.ColumnDataSource(data=dict(x_x=x_x, x_y=x_y, y_x=y_x, y_y=y_y))
+
+    # Make the plot
+    p = bokeh.plotting.figure(
+        frame_height=250,
+        frame_width=250,
+        x_axis_label="x",
+        y_axis_label="y",
+        x_range=[-1, 20],
+        y_range=[-1, 20],
+    )
+    p.line(x="x_x", y="y_x", source=cds, line_width=2, legend_label="x nullcline")
+    p.line(
+        x="x_y",
+        y="y_y",
+        source=cds,
+        line_width=2,
+        color="orange",
+        legend_label="y nullcline",
+    )
+    cds_stable = bokeh.models.ColumnDataSource(
+        dict(x=[0.0009999, 9.99999999999], y=[9.99999999999, 0.0009999])
+    )
+    cds_unstable = bokeh.models.ColumnDataSource(
+        dict(x=[1.533012798623252], y=[1.533012798623252])
+    )
+    p.circle(source=cds_stable, x="x", y="y", color="black", size=10)
+    p.circle(
+        source=cds_unstable,
+        x="x",
+        y="y",
+        line_color="black",
+        fill_color="white",
+        line_width=2,
+        size=10,
+    )
+
+    # Callback (uses JavaScript)
+    js_code = jsfuns["rootfinding"] + jsfuns["toggle_nullclines"] + "callback()"
+
+    callback = bokeh.models.CustomJS(
+        args=dict(cds=cds, cdsStable=cds_stable, cdsUnstable=cds_unstable), code=js_code
+    )
+
+    # We use the `js_on_change()` method to call the custom JavaScript code.
+    for param, slider in zip(params, sliders):
+        callback.args[param["long_name"]] = slider
+        slider.js_on_change("value", callback)
+
+    # Return layout
+    return bokeh.layouts.row(
+        p,
+        bokeh.models.Spacer(width=30),
+        bokeh.layouts.column(bokeh.models.Spacer(height=40), *sliders),
+    )
+
+
 def repressilator():
     """Replaces the plot of the protein-only repressilator. Replaces
     Python code:
@@ -209,7 +575,7 @@ def repressilator():
 
     # Widgets for controlling parameters
     beta_slider = bokeh.models.Slider(
-        title="β", start=0.0, end=100, step=0.1, value=10.0
+        title="β", start=0.01, end=100, step=0.01, value=10.0
     )
     n_slider = bokeh.models.Slider(title="n", start=1, end=5, step=0.1, value=3)
     t_max_slider = bokeh.models.Slider(
@@ -269,11 +635,9 @@ var beta = beta_slider.value;
 var n = n_slider.value;
 var t_max = t_max_slider.value;
 
-console.log(beta);
-
 t = linspace(0.0, t_max, t.length);
 
-var x = rkf45(repressilator, [1.0, 1.0, 1.2], t, [beta, n]);
+var x = rkf45(repressilator, [1.0, 1.0, 1.2], t, [beta, n], t[1] - t[0], 1e-7, 1e-3, 100);
 
 cds.data['t'] = t;
 cds.data['x1'] = x[0];
@@ -552,5 +916,4 @@ cds.change.emit();
         ),
     )
 
-    return layout
     return layout

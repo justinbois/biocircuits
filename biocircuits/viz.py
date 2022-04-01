@@ -1129,7 +1129,7 @@ def _streamlines(
     u = np.ma.masked_invalid(u)
     v = np.ma.masked_invalid(v)
 
-    integrate = matplotlib.streamplot.get_integrator(
+    integrate = matplotlib.streamplot._get_integrator(
         u, v, dmap, min_length, max_length, integration_direction
     )
 
@@ -1171,10 +1171,9 @@ def _streamlines(
     arrowtails = []
     arrowheads = []
     for t in trajectories:
-        tgx = np.array(t[0])
-        tgy = np.array(t[1])
+        tgx, tgy = t.T
         # Rescale from grid-coordinates to data-coordinates.
-        tx, ty = dmap.grid2data(*np.array(t))
+        tx, ty = dmap.grid2data(tgx, tgy)
         tx += grid.x_origin
         ty += grid.y_origin
 
