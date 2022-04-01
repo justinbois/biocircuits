@@ -9,6 +9,22 @@ function lotkaVolterra(xy, t, alpha, beta, gamma, delta) {
 }
 
 
+function lotkaVolterraIMEX(alpha, beta, gamma, delta) {
+	f = function(xy) {
+		var [x, y] = xy;
+		return [-beta * x * y, delta * x * y];
+	}
+
+	cfun = (x) => [0.0, 0.0];
+
+	Afun = (x) => [alpha, -gamma];
+
+	diagonalA = true;
+
+	return {f: f, cfun: cfun, Afun: Afun, diagonalA: true};
+}
+
+
 function cascade(yz, t, beta, gamma, n_x, n_y, x) {
 	// Unpack
 	var [y, z] = yz;
@@ -37,3 +53,10 @@ function repressilator(x, t, beta, n) {
 		beta * rep_hill(x2, n) - x3
 	]
 }
+
+
+// module.exports = {
+//   repressilator,
+//   lotkaVolterra,
+//   lotkaVolterraIMEX
+// };

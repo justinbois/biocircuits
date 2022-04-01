@@ -71,3 +71,23 @@ function ar_or_single(x, y, nx, ny) {
 
 	return (1.0 + xnx) / (1.0 + xnx + Math.pow(y, ny));
 }
+
+
+function dActHill(x, n) {
+	xn = Math.pow(x, n);
+
+	return n * Math.Pow(x, n - 1.0) / Math.pow((1 + Math.pow(x, n)), 2);
+}
+
+
+function dRepHill(x, n) {
+	xn = Math.pow(x, n);
+
+	return -n * Math.Pow(x, n - 1.0) / Math.pow((1 + Math.pow(x, n)), 2);
+}
+
+
+// module.exports = {
+//   rep_hill,
+//   act_hill
+// };
