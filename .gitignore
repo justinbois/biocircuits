@@ -2,3 +2,8 @@ build/
 dist/
 *.egg-info/
 __pycache__
+.DS_Store
+test*
+junk*
+Untitled*
+*.html
