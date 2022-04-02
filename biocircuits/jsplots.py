@@ -106,6 +106,18 @@ def autorepressor_response_to_pulse():
     circuit's response to a Gaussian pulse of induction. Also overlay
     response of unregulated circuit and approximate pulse itself.
     """
+
+    def neg_auto_rhs(x, t, beta0, gamma, k, n, ks, ns, s):
+        """
+        Right hand side for negative autoregulation motif with s dependence.
+        Return dx/dt.
+        """
+        # Compute dx/dt
+        return (
+            beta0 * (s / ks) ** ns / (1 + (s / ks) ** ns) / (1 + (x / k) ** n)
+            - gamma * x
+        )
+
     def neg_auto_rhs_s_fun(x, t, beta0, gamma, k, n, ks, ns, s_fun, s_args):
         """
         Right hand side for negative autoregulation function, with s variable.
@@ -131,7 +143,6 @@ def autorepressor_response_to_pulse():
         """
         return beta0 * (s / ks) ** ns / (1 + (s / ks) ** ns) - gamma * x
 
-
     def unreg_rhs_s_fun(x, t, beta0, gamma, ks, ns, s_fun, s_args):
         """
         Right hand side for unregulated function, with s variable.
@@ -146,7 +157,6 @@ def autorepressor_response_to_pulse():
         # Plug in this value of s to the RHS of the negative autoregulation model
         return unreg_rhs(x, t, beta0, gamma, ks, ns, s)
 
-
     def s_pulse(t, t_0, tau):
         """
         Returns s value for a pulse centered at t_0 with duration tau.
@@ -154,8 +164,9 @@ def autorepressor_response_to_pulse():
         # Return 0 is tau is zero, otherwise Gaussian
         return 0 if tau == 0 else np.exp(-4 * (t - t_0) ** 2 / tau ** 2)
 
-
     # Set up initial parameters
+    colors = colorcet.b_glasbey_category10
+
     # Time points we want for the solution
     t = np.linspace(0, 10, 200)
 
@@ -163,12 +174,12 @@ def autorepressor_response_to_pulse():
     x0 = 0.0
 
     # Parameters
-    beta0 = 100
-    gamma = 1
-    k = 0.5
-    n = 1
-    s = 100
-    ns = 10
+    beta0 = 100.0
+    gamma = 1.0
+    k = 1.0
+    n = 1.0
+    s = 100.0
+    ns = 10.0
     ks = 0.1
     s_args = (4.0, 2.0)
     args = (beta0, gamma, k, n, ks, ns, s_pulse, s_args)
@@ -200,8 +211,22 @@ def autorepressor_response_to_pulse():
     )
 
     # Populate glyphs
-    p.line(source=cds, x="t", y="x", line_width=2, color=colors[1], legend_label="x neg. auto.")
-    p.line(source=cds, x="t", y="x_unreg", line_width=2, color=colors[2], legend_label="x unreg.")
+    p.line(
+        source=cds,
+        x="t",
+        y="x",
+        line_width=2,
+        color=colors[1],
+        legend_label="x neg. auto.",
+    )
+    p.line(
+        source=cds,
+        x="t",
+        y="x_unreg",
+        line_width=2,
+        color=colors[2],
+        legend_label="x unreg.",
+    )
     p.line(source=cds, x="t", y="s", line_width=2, color=colors[0], legend_label="s")
 
     # Place the legend
@@ -218,22 +243,88 @@ def autorepressor_response_to_pulse():
         title="log₁₀ k", start=-1, end=2, step=0.1, value=np.log10(k), width=150
     )
     n_slider = bokeh.models.Slider(
-        title="n", start=0.1, end=10, step=0.1, value=2, width=150
+        title="n", start=0.1, end=10, step=0.1, value=n, width=150
     )
     log_ks_slider = bokeh.models.Slider(
         title="log₁₀ kₛ", start=-2, end=2, step=0.1, value=np.log10(ks), width=150
     )
     ns_slider = bokeh.models.Slider(
-        title="nₛ", start=0.1, end=10, step=0.1, value=10, width=150
+        title="nₛ", start=0.1, end=10, step=0.1, value=ns, width=150
     )
     t0_slider = bokeh.models.Slider(
-        title="t₀", start=0.01, end=10, step=0.01, value=4.0, width=150
+        title="t₀", start=0.01, end=10, step=0.01, value=s_args[0], width=150
     )
     tau_slider = bokeh.models.Slider(
-        title="τ", start=0.01, end=10, step=0.01, value=2.0, width=150
+        title="τ", start=0.01, end=10, step=0.01, value=s_args[1], width=150
     )
-    normalize_toggle = bokeh.models.Toggle(label='Normalize', active=True, width=50)
-    legend_toggle = bokeh.models.Toggle(label='Legend', active=True, width=50)
+    normalize_toggle = bokeh.models.Toggle(label="Normalize", active=True, width=50)
+    legend_toggle = bokeh.models.Toggle(label="Legend", active=True, width=50)
+
+    # JavaScript callback, updates fixed points using Newton's method
+    js_code = (
+        jsfuns["linalg"]
+        + jsfuns["ode"]
+        + jsfuns["utils"]
+        + jsfuns["autorepressor_response_to_pulse"]
+        + "callback()"
+    )
+
+    callback = bokeh.models.CustomJS(
+        args=dict(
+            cds=cds,
+            p=p,
+            t0Slider=t0_slider,
+            tauSlider=tau_slider,
+            logBeta0Slider=log_beta0_slider,
+            logGammaSlider=log_gamma_slider,
+            logkSlider=log_k_slider,
+            nSlider=n_slider,
+            logksSlider=log_ks_slider,
+            nsSlider=ns_slider,
+            normalizeToggle=normalize_toggle,
+            legendToggle=legend_toggle,
+            xRange=p.x_range,
+            yaxis=p.yaxis[0],
+            legend=p.legend[0],
+        ),
+        code=js_code,
+    )
+
+    # Use the `js_on_change()` method to call the custom JavaScript code.
+    for slider in [
+        t0_slider,
+        tau_slider,
+        log_beta0_slider,
+        log_gamma_slider,
+        log_k_slider,
+        n_slider,
+        log_ks_slider,
+        n_slider,
+        log_ks_slider,
+        ns_slider,
+    ]:
+        slider.js_on_change("value", callback)
+
+    # Execute callback with changes in toggles
+    normalize_toggle.js_on_change("active", callback)
+    legend_toggle.js_on_change("active", callback)
+
+    # Also trigger if x_range changes
+    p.x_range.js_on_change("end", callback)
+
+    # Lay out and return
+    layout = bokeh.layouts.row(
+        p,
+        bokeh.layouts.Spacer(width=30),
+        bokeh.layouts.column(
+            log_beta0_slider, log_gamma_slider, log_k_slider, n_slider, legend_toggle,
+        ),
+        bokeh.layouts.column(
+            log_ks_slider, ns_slider, t0_slider, tau_slider, normalize_toggle,
+        ),
+    )
+    return layout
+
 
 def autoactivator_fixed_points():
     """Make an interactive plot of fixed points for a potentially

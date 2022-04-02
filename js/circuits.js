@@ -25,21 +25,16 @@ function lotkaVolterraIMEX(alpha, beta, gamma, delta) {
 }
 
 
-function cascade(yz, t, beta, gamma, n_x, n_y, x) {
+function cascade(yz, t, beta, gamma, n_x, n_y, x_fun, x_args) {
 	// Unpack
 	var [y, z] = yz;
+
+	var x = x_fun(t, ...x_args);
 
 	var dy_dt = beta * act_hill(x, n_x) - y;
 	var dz_dy = gamma * (act_hill(y, n_y) - z)
 
 	return [dy_dt, dz_dt];
-}
-
-
-function cascade(yz, t, beta, gamma, n_x, n_y, x_fun, x_args) {
-	var x = x_fun(t, ...x_args);
-
-	return cascade(yz, t, beta, gamma, n_x, n_y, x);
 }
 
 
