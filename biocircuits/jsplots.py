@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 import scipy.integrate
+import scipy.special
 
 import matplotlib.streamplot
 
@@ -57,8 +58,167 @@ def _sin_plot():
     return layout
 
 
+def michaelis_menten_approx():
+    def michaelis_menten_rhs(c, t, kappa, zeta):
+        cs, ces, cp = c
+        return np.array(
+            [
+                (-(1 - ces) * cs + (1 - kappa) * ces) / kappa,
+                ((1 - ces) * cs - ces) / kappa / zeta,
+                ces,
+            ]
+        )
+
+    def approx_michaelis_menten(c0, t, kappa, zeta):
+        """Analytical solution to the Michaelis-Menten equation."""
+        cs0, ces0, cp0 = c0
+        cs = scipy.special.lambertw(cs0 * np.exp(cs0 - t)).real
+        ces = cs / (1 + cs)
+        cp = cs0 + cp0 - cs - zeta * (ces0 + ces)
+
+        return cs, ces, cp
+
+    kappa_slider = bokeh.models.Slider(
+        title="κ", start=0.01, end=1, value=0.5, step=0.01, width=100
+    )
+    zeta_slider = bokeh.models.Slider(
+        title="ζ",
+        start=-2,
+        end=2,
+        value=-2,
+        step=0.05,
+        width=100,
+        format=bokeh.models.FuncTickFormatter(
+            code="return Math.pow(10, tick).toFixed(2)"
+        ),
+    )
+    cs0_slider = bokeh.models.Slider(
+        title="init. substr. conc.",
+        start=-1,
+        end=1,
+        value=0.0,
+        step=0.01,
+        width=100,
+        format=bokeh.models.FuncTickFormatter(
+            code="return Math.pow(10, tick).toFixed(2)"
+        ),
+    )
+
+    def solve_mm(kappa, zeta, cs0):
+        # Initial condition
+        c0 = np.array([cs0, 0.0, 0.0])
+
+        # Time points
+        t = np.linspace(0, 10, 400)
+
+        # Solve the full system
+        c = scipy.integrate.odeint(michaelis_menten_rhs, c0, t, args=(kappa, zeta))
+        cs, ces, cp = c.transpose()
+
+        # Solve the approximate system
+        cs_approx, ces_approx, cp_approx = approx_michaelis_menten(c0, t, kappa, zeta)
+
+        return t, cs, ces, cp, cs_approx, ces_approx, cp_approx
+
+    # Get solution for initial glyphs
+    t, cs, ces, cp, cs_approx, ces_approx, cp_approx = solve_mm(
+        kappa_slider.value, 10 ** zeta_slider.value, 10 ** cs0_slider.value
+    )
+
+    # Set up ColumnDataSource for plot
+    cds = bokeh.models.ColumnDataSource(
+        dict(
+            t=t,
+            cs=cs,
+            ces=ces,
+            cp=cp,
+            cs_approx=cs_approx,
+            ces_approx=ces_approx,
+            cp_approx=cp_approx,
+        )
+    )
+
+    # Make the plot
+    p = bokeh.plotting.figure(
+        plot_width=500,
+        plot_height=250,
+        x_axis_label="dimensionless time",
+        y_axis_label="dimensionless concentration",
+        x_range=[0, 10],
+        y_range=[-0.02, 1.02],
+    )
+
+    colors = colorcet.b_glasbey_category10
+
+    # Populate glyphs
+    p.line(
+        source=cds, x="t", y="ces", line_width=2, color=colors[0], legend_label="ES",
+    )
+    p.line(
+        source=cds, x="t", y="cs", line_width=2, color=colors[1], legend_label="S",
+    )
+    p.line(
+        source=cds, x="t", y="cp", line_width=2, color=colors[2], legend_label="P",
+    )
+    p.line(
+        source=cds, x="t", y="ces_approx", line_width=4, color=colors[0], alpha=0.3,
+    )
+    p.line(
+        source=cds, x="t", y="cs_approx", line_width=4, color=colors[1], alpha=0.3,
+    )
+    p.line(
+        source=cds, x="t", y="cp_approx", line_width=4, color=colors[2], alpha=0.3,
+    )
+
+    p.legend.location = "center_right"
+
+    # JavaScript callback
+    js_code = (
+        jsfuns["michaelis_menten_approx"]
+        + jsfuns["utils"]
+        + jsfuns["linalg"]
+        + jsfuns["ode"]
+        + "callback()"
+    )
+    callback = bokeh.models.CustomJS(
+        args=dict(
+            cds=cds,
+            kappaSlider=kappa_slider,
+            zetaSlider=zeta_slider,
+            cs0Slider=cs0_slider,
+            xRange=p.x_range,
+            yRange=p.y_range,
+        ),
+        code=js_code,
+    )
+
+    # Link sliders
+    kappa_slider.js_on_change("value", callback)
+    zeta_slider.js_on_change("value", callback)
+    cs0_slider.js_on_change("value", callback)
+
+    # Also trigger if x_range changes
+    p.x_range.js_on_change("end", callback)
+
+    # Build layout
+    layout = bokeh.layouts.column(
+        bokeh.layouts.row(
+            bokeh.models.Spacer(width=40),
+            kappa_slider,
+            bokeh.models.Spacer(width=10),
+            zeta_slider,
+            bokeh.models.Spacer(width=10),
+            cs0_slider,
+        ),
+        bokeh.models.Spacer(width=10),
+        p,
+    )
+
+    return layout
+
+
 def gaussian_pulse():
-    """Make a plot of a Gaussian pulse/
+    """Make a plot of a Gaussian pulse.
     """
     # t/s data for plotting
     t_0 = 4.0
@@ -514,137 +674,11 @@ def toggle_nullclines():
     )
 
 
-def repressilator():
-    """Replaces the plot of the protein-only repressilator. Replaces
-    Python code:
-
-    def repressilator_rhs(x, t, beta, n):
-        '''
-        Returns 3-array of (dx_1/dt, dx_2/dt, dx_3/dt)
-        '''
-        x_1, x_2, x_3 = x
-
-        return np.array(
-            [
-                beta / (1 + x_3 ** n) - x_1,
-                beta / (1 + x_1 ** n) - x_2,
-                beta / (1 + x_2 ** n) - x_3,
-            ]
-        )
-
-
-    # Initial condiations
-    x0 = np.array([1, 1, 1.2])
-
-    # Number of points to use in plots
-    n_points = 1000
-
-    # Widgets for controlling parameters
-    beta_slider = bokeh.models.Slider(title="β", start=0, end=100, step=0.1, value=10)
-    n_slider = bokeh.models.Slider(title="n", start=1, end=5, step=0.1, value=3)
-    t_max_slider = bokeh.models.Slider(title="t_max", start=1, end=100, step=1, value=40)
-
-    # Solve for species concentrations
-    def _solve_repressilator(beta, n, t_max):
-        t = np.linspace(0, t_max, n_points)
-        x = scipy.integrate.odeint(repressilator_rhs, x0, t, args=(beta, n))
-
-        return t, x.transpose()
-
-
-    # Obtain solution for plot
-    t, x = _solve_repressilator(beta_slider.value, n_slider.value, t_max_slider.value)
-
-    # Build the plot
-    colors = colorcet.b_glasbey_category10[:3]
-
-    p_rep = bokeh.plotting.figure(
-        frame_width=550, frame_height=200, x_axis_label="t", x_range=[0, t_max_slider.value]
-    )
-
-    cds = bokeh.models.ColumnDataSource(data=dict(t=t, x1=x[0], x2=x[1], x3=x[2]))
-    labels = dict(x1="x₁", x2="x₂", x3="x₃")
-    for color, x_val in zip(colors, labels):
-        p_rep.line(
-            source=cds,
-            x="t",
-            y=x_val,
-            color=color,
-            legend_label=labels[x_val],
-            line_width=2,
-        )
-
-    p_rep.legend.location = "top_left"
-
-
-    # Set up plot
-    p_phase = bokeh.plotting.figure(
-        frame_width=200, frame_height=200, x_axis_label="x₁", y_axis_label="x₂",
-    )
-
-    p_phase.line(source=cds, x="x1", y="x2", line_width=2)
-
-
-    if fully_interactive_plots:
-        # Set up callbacks
-        def _callback(attr, old, new):
-            t, x = _solve_repressilator(
-                beta_slider.value, n_slider.value, t_max_slider.value
-            )
-            cds.data = dict(t=t, x1=x[0], x2=x[1], x3=x[2])
-            p_rep.x_range.end = t_max_slider.value
-
-        beta_slider.on_change("value", _callback)
-        n_slider.on_change("value", _callback)
-        t_max_slider.on_change("value", _callback)
-
-        # Build layout
-        repressilator_layout = bokeh.layouts.column(
-            p_rep,
-            bokeh.layouts.Spacer(height=10),
-            bokeh.layouts.row(
-                p_phase,
-                bokeh.layouts.Spacer(width=70),
-                bokeh.layouts.column(beta_slider, n_slider, t_max_slider, width=150),
-            ),
-        )
-
-        # Build the app
-        def repressilator_app(doc):
-            doc.add_root(repressilator_layout)
-
-        bokeh.io.show(repressilator_app, notebook_url=notebook_url)
-    else:
-        beta_slider.disabled = True
-        n_slider.disabled = True
-        t_max_slider.disabled = True
-
-        # Build layout
-        repressilator_layout = bokeh.layouts.column(
-            p_rep,
-            bokeh.layouts.Spacer(height=10),
-            bokeh.layouts.row(
-                p_phase,
-                bokeh.layouts.Spacer(width=70),
-                bokeh.layouts.column(
-                    bokeh.layouts.column(beta_slider, n_slider, t_max_slider, width=150),
-                    bokeh.models.Div(
-                        text='''
-    <p>Sliders are inactive. To get active sliders, re-run notebook with
-    <font style="font-family:monospace;">fully_interactive_plots = True</font>
-    in the first code cell.</p>
-            ''',
-                        width=250,
-                    ),
-                ),
-            ),
-        )
-
-    bokeh.io.show(repressilator_layout)
-
+def protein_repressilator():
+    """Plot the dynamics of a protein-only repressilator circuit.
     """
 
-    def repressilator_rhs(x, t, beta, n):
+    def protein_repressilator_rhs(x, t, beta, n):
         """
         Returns 3-array of (dx_1/dt, dx_2/dt, dx_3/dt)
         """
@@ -669,19 +703,16 @@ def repressilator():
         title="β", start=0.01, end=100, step=0.01, value=10.0
     )
     n_slider = bokeh.models.Slider(title="n", start=1, end=5, step=0.1, value=3)
-    t_max_slider = bokeh.models.Slider(
-        title="t_max", start=1, end=100, step=1, value=40
-    )
 
     # Solve for species concentrations
     def _solve_repressilator(beta, n, t_max):
         t = np.linspace(0, t_max, n_points)
-        x = scipy.integrate.odeint(repressilator_rhs, x0, t, args=(beta, n))
+        x = scipy.integrate.odeint(protein_repressilator_rhs, x0, t, args=(beta, n))
 
         return t, x.transpose()
 
     # Obtain solution for plot
-    t, x = _solve_repressilator(beta_slider.value, n_slider.value, t_max_slider.value)
+    t, x = _solve_repressilator(beta_slider.value, n_slider.value, 40.0)
 
     # Build the plot
     colors = colorcet.b_glasbey_category10[:3]
@@ -690,7 +721,7 @@ def repressilator():
         frame_width=550,
         frame_height=200,
         x_axis_label="t",
-        x_range=[0, t_max_slider.value],
+        x_range=[0, 40.0],
     )
 
     cds = bokeh.models.ColumnDataSource(data=dict(t=t, x1=x[0], x2=x[1], x3=x[2]))
@@ -719,48 +750,24 @@ def repressilator():
         jsfuns["reg"]
         + jsfuns["ode"]
         + jsfuns["circuits"]
-        + """
-var t = cds.data['t'];
-
-var beta = beta_slider.value;
-var n = n_slider.value;
-var t_max = t_max_slider.value;
-
-t = linspace(0.0, t_max, t.length);
-
-var x = rkf45(repressilator, [1.0, 1.0, 1.2], t, [beta, n], t[1] - t[0], 1e-7, 1e-3, 100);
-
-cds.data['t'] = t;
-cds.data['x1'] = x[0];
-cds.data['x2'] = x[1];
-cds.data['x3'] = x[2];
-
-x_range.end = t_max;
-
-cds.change.emit();
-"""
+        + jsfuns["utils"]
+        + jsfuns["linalg"]
+        + jsfuns["proteinRepressilator"]
+        + 'callback()'
     )
     callback = bokeh.models.CustomJS(
         args=dict(
             cds=cds,
-            x_range=p_rep.x_range,
-            beta_slider=beta_slider,
-            n_slider=n_slider,
-            t_max_slider=t_max_slider,
+            xRange=p_rep.x_range,
+            betaSlider=beta_slider,
+            nSlider=n_slider,
         ),
         code=js_code,
     )
 
-    def _callback(attr, old, new):
-        t, x = _solve_repressilator(
-            beta_slider.value, n_slider.value, t_max_slider.value
-        )
-        cds.data = dict(t=t, x1=x[0], x2=x[1], x3=x[2])
-        p_rep.x_range.end = t_max_slider.value
-
     beta_slider.js_on_change("value", callback)
     n_slider.js_on_change("value", callback)
-    t_max_slider.js_on_change("value", callback)
+    p_rep.x_range.js_on_change("end", callback)
 
     # Build layout
     layout = bokeh.layouts.column(
@@ -769,9 +776,159 @@ cds.change.emit();
         bokeh.layouts.row(
             p_phase,
             bokeh.layouts.Spacer(width=70),
-            bokeh.layouts.column(beta_slider, n_slider, t_max_slider, width=150),
+            bokeh.layouts.column(beta_slider, n_slider, width=150),
         ),
     )
+
+    return layout
+
+
+def repressilator():
+    """Plot the dynamics of a repressilator circuit.
+    """
+
+    # Sliders
+    beta_slider = bokeh.models.Slider(
+        title="β",
+        start=0,
+        end=4,
+        step=0.1,
+        value=1,
+        format=bokeh.models.FuncTickFormatter(code="return Math.pow(10, tick).toFixed(2)"),
+    )
+    gamma_slider = bokeh.models.Slider(
+        title="γ",
+        start=-3,
+        end=0,
+        step=0.1,
+        value=0,
+        format=bokeh.models.FuncTickFormatter(code="return Math.pow(10, tick).toFixed(3)"),
+    )
+    rho_slider = bokeh.models.Slider(
+        title="ρ",
+        start=-6,
+        end=0,
+        step=0.1,
+        value=-3,
+        format=bokeh.models.FuncTickFormatter(code="return Math.pow(10, tick).toFixed(6)"),
+    )
+    n_slider = bokeh.models.Slider(title="n", start=1, end=5, step=0.1, value=3)
+
+
+    def repressilator_rhs(mx, t, beta, gamma, rho, n):
+        """
+        Returns 6-array of (dm_1/dt, dm_2/dt, dm_3/dt, dx_1/dt, dx_2/dt, dx_3/dt)
+        """
+        m_1, m_2, m_3, x_1, x_2, x_3 = mx
+        return np.array(
+            [
+                beta * (rho + 1 / (1 + x_3 ** n)) - m_1,
+                beta * (rho + 1 / (1 + x_1 ** n)) - m_2,
+                beta * (rho + 1 / (1 + x_2 ** n)) - m_3,
+                gamma * (m_1 - x_1),
+                gamma * (m_2 - x_2),
+                gamma * (m_3 - x_3),
+            ]
+        )
+
+
+    # Initial condiations
+    x0 = np.array([0, 0, 0, 1, 1.1, 1.2])
+
+    # Number of points to use in plots
+    n_points = 1000
+
+    # Solve for species concentrations
+    def _solve_repressilator(log_beta, log_gamma, log_rho, n, t_max):
+        beta = 10 ** log_beta
+        gamma = 10 ** log_gamma
+        rho = 10 ** log_rho
+        t = np.linspace(0, t_max, n_points)
+        x = scipy.integrate.odeint(repressilator_rhs, x0, t, args=(beta, gamma, rho, n))
+        m1, m2, m3, x1, x2, x3 = x.transpose()
+        return t, m1, m2, m3, x1, x2, x3
+
+
+    t, m1, m2, m3, x1, x2, x3 = _solve_repressilator(
+        beta_slider.value,
+        gamma_slider.value,
+        rho_slider.value,
+        n_slider.value,
+        40.0,
+    )
+
+    cds = bokeh.models.ColumnDataSource(
+        dict(t=t, m1=m1, m2=m2, m3=m3, x1=x1, x2=x2, x3=x3)
+    )
+
+    p = bokeh.plotting.figure(
+        frame_width=500,
+        frame_height=200,
+        x_axis_label="t",
+        x_range=[0, 40.0],
+    )
+
+    colors = bokeh.palettes.d3["Category20"][6]
+    m1_line = p.line(source=cds, x="t", y="m1", line_width=2, color=colors[1])
+    x1_line = p.line(source=cds, x="t", y="x1", line_width=2, color=colors[0])
+    m2_line = p.line(source=cds, x="t", y="m2", line_width=2, color=colors[3])
+    x2_line = p.line(source=cds, x="t", y="x2", line_width=2, color=colors[2])
+    m3_line = p.line(source=cds, x="t", y="m3", line_width=2, color=colors[5])
+    x3_line = p.line(source=cds, x="t", y="x3", line_width=2, color=colors[4])
+
+    legend_items = [
+        ("m₁", [m1_line]),
+        ("x₁", [x1_line]),
+        ("m₂", [m2_line]),
+        ("x₂", [x2_line]),
+        ("m₃", [m3_line]),
+        ("x₃", [x3_line]),
+    ]
+    legend = bokeh.models.Legend(items=legend_items)
+    legend.click_policy = 'hide'
+
+    p.add_layout(legend, "right")
+
+    # Build the layout
+    layout = bokeh.layouts.column(
+        bokeh.layouts.row(
+            beta_slider,
+            gamma_slider,
+            rho_slider,
+            n_slider,
+            width=575,
+        ),
+        bokeh.layouts.Spacer(height=10),
+        p,
+    )
+
+    # Set up callbacks
+    js_code = (
+        jsfuns["reg"]
+        + jsfuns["ode"]
+        + jsfuns["circuits"]
+        + jsfuns["utils"]
+        + jsfuns["linalg"]
+        + jsfuns["repressilator"]
+        + 'callback()'
+    )
+    callback = bokeh.models.CustomJS(
+        args=dict(
+            cds=cds,
+            xRange=p.x_range,
+            betaSlider=beta_slider,
+            rhoSlider=rho_slider,
+            gammaSlider=gamma_slider,
+            nSlider=n_slider,
+        ),
+        code=js_code,
+    )
+
+    beta_slider.js_on_change("value", callback)
+    gamma_slider.js_on_change("value", callback)
+    rho_slider.js_on_change("value", callback)
+    n_slider.js_on_change("value", callback)
+    p.x_range.js_on_change("end", callback)
 
     return layout
 

@@ -1249,6 +1249,68 @@ function solve(A, b) {
 }
 
 """,
+    "michaelis_menten_approx": """
+function michaelisMentenRHS(c, t, kappa, zeta){
+    let [cs, ces, cp] = c;
+
+    return [
+    	(-(1.0 - ces) * cs + (1.0 - kappa) * ces) / kappa,
+        ((1.0 - ces) * cs - ces) / kappa / zeta,
+        ces
+    ];
+}
+
+
+function approxMichaelisMentenRHS(c, t, kappa, zeta) {
+    let cs = c[0];
+    return [-cs / (1.0 + cs)];
+}
+
+
+function callback() {
+	let xRangeMax = xRange.end;
+	let dt = 0.01;
+	let cs0 = Math.pow(10.0, cs0Slider.value);
+	let cp0 = 0.0; // No product to start
+	let ces0 = 0.0;
+	let c0 = [cs0, 0.0, 0.0];
+	let c0Approx = [cs0];
+	let kappa = kappaSlider.value;
+	let zeta = Math.pow(10.0, zetaSlider.value);
+
+	let t = linspace(0.0, xRangeMax, cds.data['t'].length);
+	let args = [kappa, zeta];
+
+	// Integrate ODES
+	let cSolve = rkf45(michaelisMentenRHS, c0, t, args, dt);
+	let csApprox = rkf45(approxMichaelisMentenRHS, c0Approx, t, args)[0];
+
+	// Compute product and enzyme conc from substrate in approximate regime
+    let cesApprox = [];
+    let cpApprox = [];
+    for (let i = 0; i < csApprox.length; i++) {
+    	cesApprox[i] = csApprox[i] / (1.0 + csApprox[i]);
+    	cpApprox[i] = cs0 + cp0 - csApprox[i] + zeta * (ces0 - cesApprox[i]);
+    }
+
+	// Update data
+	cds.data['t'] = t;
+	cds.data['cs'] = cSolve[0];
+	cds.data['ces'] = cSolve[1];
+	cds.data['cp'] = cSolve[2];
+	cds.data['cs_approx'] = csApprox;
+	cds.data['ces_approx'] = cesApprox;
+	cds.data['cp_approx'] = cpApprox;
+
+	// Update y-range
+	yRange.start = -0.02 * cs0;
+	yRange.end = 1.02 * cs0;
+
+	cds.change.emit();
+	yRange.change.emit();
+}
+
+""",
     "autorepressor_response_to_pulse": """
 function negAutoRHS(x, t, beta0, gamma, k, n, ks, ns, sFun, sArgs=[]) {
 	let xScalar = x[0]
@@ -1474,6 +1536,84 @@ function callback() {
 	cds.change.emit();
 	cds_fp_stable.change.emit();
 	cds_fp_unstable.change.emit();
+}
+
+""",
+    "proteinRepressilator": """
+function proteinRepressilator(x, t, beta, n) {
+	// Unpack
+	var [x1, x2, x3] = x;
+
+	return [
+		beta * rep_hill(x3, n) - x1,
+		beta * rep_hill(x1, n) - x2,
+		beta * rep_hill(x2, n) - x3
+	];
+}
+
+
+function callback() {
+	let xRangeMax = xRange.end;
+	let dt = 0.01;
+	let x0 = [1.0, 1.0, 1.2];
+	let beta = betaSlider.value;
+	let n = nSlider.value;
+
+	let t = linspace(0.0, xRangeMax, cds.data['t'].length);
+	let args = [beta, n];
+
+	// Integrate ODES
+	let xSolve = rkf45(proteinRepressilator, x0, t, args, t[1] - t[0], 1e-7, 1e-3, 100);
+
+	cds.data['t'] = t;
+	cds.data['x1'] = xSolve[0];
+	cds.data['x2'] = xSolve[1];
+	cds.data['x3'] = xSolve[2];
+
+	cds.change.emit();
+}
+
+""",
+    "repressilator": """
+function repressilator(x, t, beta, rho, gamma, n) {
+	// Unpack
+	let [m1, m2, m3, x1, x2, x3] = x;
+
+	return [
+		beta * (rho + rep_hill(x3, n)) - m1,
+		beta * (rho + rep_hill(x1, n)) - m2,
+		beta * (rho + rep_hill(x2, n)) - m3,
+		gamma * (m1 - x1),
+		gamma * (m2 - x2),
+		gamma * (m3 - x3)
+	];
+}
+
+
+function callback() {
+	let xRangeMax = xRange.end;
+	let dt = 0.01;
+	let x0 = [0.0, 0.0, 0.0, 1.0, 1.0, 1.2];
+	let beta = Math.pow(10, betaSlider.value);
+	let gamma = Math.pow(10, gammaSlider.value);
+	let rho = Math.pow(10, rhoSlider.value);
+	let n = nSlider.value;
+
+	let t = linspace(0.0, xRangeMax, cds.data['t'].length);
+	let args = [beta, rho, gamma, n];
+
+	// Integrate ODES
+	let xSolve = rkf45(repressilator, x0, t, args, t[1] - t[0], 1e-7, 1e-3, 100);
+
+	cds.data['t'] = t;
+	cds.data['m1'] = xSolve[0];
+	cds.data['m2'] = xSolve[1];
+	cds.data['m3'] = xSolve[2];
+	cds.data['x1'] = xSolve[3];
+	cds.data['x2'] = xSolve[4];
+	cds.data['x3'] = xSolve[5];
+
+	cds.change.emit();
 }
 
 """,
