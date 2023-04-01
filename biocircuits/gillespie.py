@@ -49,6 +49,10 @@ def _gillespie_draw(propensity_func, propensities, population, t, args):
     # Sum of propensities
     props_sum = _sum(propensities)
 
+    # Bail if the sum of propensities is zero (no moves to make)
+    if props_sum == 0.0:
+        return -1, -1.0
+
     # Compute time
     time = _draw_time(props_sum)
 
@@ -85,12 +89,16 @@ def _gillespie_trajectory(
             # draw the event and time step
             event, dt = draw_fun(propensity_func, propensities, population, t, args)
 
-            # Update the population
-            _copy_population(population_previous, population)
-            population += update[event, :]
+            if event == -1:
+                # Skip to the end of the simulation with the same population
+                t = time_points[-1]
+            else:
+                # Update the population
+                _copy_population(population_previous, population)
+                population += update[event, :]
 
-            # Increment time
-            t += dt
+                # Increment time
+                t += dt
 
         # Update the index (Have to be careful about types for Numba)
         j = np.searchsorted((time_points > t).astype(np.int64), 1)
@@ -105,7 +113,6 @@ def _gillespie_trajectory(
     return pop_out, None
 
 
-@numba.njit
 def _gillespie_trajectory_report_time_points(
     propensity_func, update, population_0, time_points, draw_fun, args=()
 ):
@@ -129,12 +136,20 @@ def _gillespie_trajectory_report_time_points(
             # draw the event and time step
             event, dt = draw_fun(propensity_func, propensities, population, t, args)
 
+            if event == -1:
+                # Skip to the end of the simulation with the same population
+                t = time_points[-1]
+            else:
+                # New population
+                population += update[event, :]
+
+                # Increment time
+                t += dt
+
             # Update the population
-            population += update[event, :]
             pop[i, :] = population
 
-            # Increment time
-            t += dt
+            # Updated time
             tp[i] = t
 
             # Increment indexes
@@ -226,6 +241,10 @@ def _gillespie_ssa(
             # Sum of propensities
             props_sum = np.sum(propensities)
 
+            # Bail if the sum of propensities is zero
+            if props_sum == 0.0:
+                return -1, -1.0
+
             # Compute time
             time = np.random.exponential(1 / props_sum)
 
@@ -258,12 +277,20 @@ def _gillespie_ssa(
                         # draw the event and time step
                         event, dt = _draw(propensities, population, t)
 
+                        if event == -1:
+                            # Skip to the end of the simulation with the same population
+                            t = time_points[-1]
+                        else:
+                            # New population
+                            population += update[event, :]
+
+                            # Increment time
+                            t += dt
+
                         # Update the population
-                        population += update[event, :]
                         pop[i, :] = population
 
-                        # Increment time
-                        t += dt
+                        # Updated time
                         tp[i] = t
 
                         # Increment indexes
@@ -299,12 +326,16 @@ def _gillespie_ssa(
                         # draw the event and time step
                         event, dt = _draw(propensities, population, t)
 
-                        # Update the population
-                        _copy_population(population_previous, population)
-                        population += update[event, :]
+                        if event == -1:
+                            # Skip to the end of the simulation with the same population
+                            t = time_points[-1]
+                        else:
+                            # Update the population
+                            _copy_population(population_previous, population)
+                            population += update[event, :]
 
-                        # Increment time
-                        t += dt
+                            # Increment time
+                            t += dt
 
                     # Update the index (Be careful about types for Numba)
                     j = np.searchsorted((time_points > t).astype(np.int64), 1)
@@ -321,7 +352,7 @@ def _gillespie_ssa(
     else:
         if return_time_points:
 
-            def traj():
+            def _traj():
                 return _gillespie_trajectory_report_time_points(
                     propensity_func,
                     update,
@@ -371,7 +402,7 @@ def _gillespie_ssa(
 
 
 def _gillespie_multi_fn(args):
-    """Convenient function for multithreading."""
+    """Convenience function for multithreading."""
     return _gillespie_ssa(*args)
 
 

@@ -267,7 +267,7 @@ def interactive_xy_plot(
     """
     warnings.warn(
         DeprecationWarning,
-        "`interactive_xy_plot() is deprecated. Either custom build an interactive plot with base Bokeh or use Panel.",
+        "`interactive_xy_plot() is deprecated.",
     )
 
     def _plot_app(doc):
@@ -1451,3 +1451,55 @@ def _display_clicks(div, attributes=[], style="float:left;clear:left;font_size=0
     """
         % (attributes, style),
     )
+
+
+def phase_portrait2(
+    du_dt,
+    dv_dt,
+    u_range,
+    v_range,
+    args_u=(),
+    args_v=(),
+    log=False,
+    p=None,
+    zoomable=False,
+    **kwargs,
+):
+    """
+    Plots the phase portrait for a 2D dynamical system in the u-v plane.
+
+    Parameters
+    ----------
+    du_dt : function
+        A function to compute the right hand side of du/dt. Must have
+        call signature `du_dt(u, v, *args_u)`. Note that there can be
+        no explicit time dependence.
+    dv_dt : function
+        A function to compute the right hand side of dv/dt. Must have
+        call signature `dv_dt(u, v, *args_v)`. Note that there can be
+        no explicit time dependence.
+    u_range : array_like, shape (2,)
+        Minimum and maximum values of u to consider.
+    v_range : array_like, shape (2,)
+        Minimum and maximum values of v to consider.
+    args_u : tuple, default ()
+        Tuple of extra arguments to be passed to `du_dt`.
+    args_v : tuple, default ()
+        Tuple of extra arguments to be passed to `dv_dt`.
+    log : bool, default False
+        If True, plot u and v on a logarithmic scale.
+    p : bokeh.plotting.Figure instance, default None
+        Figure to use for the phase portrait. If None, a new one is
+        created according to `streamplot()`.
+    zoomable : bool, default False
+        If True, generates a zoomable plot where the streamlines will be
+        redrawn to correspond for the level so zoom. This requires
+        Python to be running for the plot to render.
+    kwargs :
+        All other kwargs are passed to `streamplot`.
+
+    Returns
+    -------
+    output : bokeh.plotting.Figure instance populated with streamplot
+    """
+

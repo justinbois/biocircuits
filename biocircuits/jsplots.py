@@ -718,10 +718,7 @@ def protein_repressilator():
     colors = colorcet.b_glasbey_category10[:3]
 
     p_rep = bokeh.plotting.figure(
-        frame_width=550,
-        frame_height=200,
-        x_axis_label="t",
-        x_range=[0, 40.0],
+        frame_width=550, frame_height=200, x_axis_label="t", x_range=[0, 40.0],
     )
 
     cds = bokeh.models.ColumnDataSource(data=dict(t=t, x1=x[0], x2=x[1], x3=x[2]))
@@ -753,14 +750,11 @@ def protein_repressilator():
         + jsfuns["utils"]
         + jsfuns["linalg"]
         + jsfuns["proteinRepressilator"]
-        + 'callback()'
+        + "callback()"
     )
     callback = bokeh.models.CustomJS(
         args=dict(
-            cds=cds,
-            xRange=p_rep.x_range,
-            betaSlider=beta_slider,
-            nSlider=n_slider,
+            cds=cds, xRange=p_rep.x_range, betaSlider=beta_slider, nSlider=n_slider,
         ),
         code=js_code,
     )
@@ -794,7 +788,9 @@ def repressilator():
         end=4,
         step=0.1,
         value=1,
-        format=bokeh.models.FuncTickFormatter(code="return Math.pow(10, tick).toFixed(2)"),
+        format=bokeh.models.FuncTickFormatter(
+            code="return Math.pow(10, tick).toFixed(2)"
+        ),
     )
     gamma_slider = bokeh.models.Slider(
         title="γ",
@@ -802,7 +798,9 @@ def repressilator():
         end=0,
         step=0.1,
         value=0,
-        format=bokeh.models.FuncTickFormatter(code="return Math.pow(10, tick).toFixed(3)"),
+        format=bokeh.models.FuncTickFormatter(
+            code="return Math.pow(10, tick).toFixed(3)"
+        ),
     )
     rho_slider = bokeh.models.Slider(
         title="ρ",
@@ -810,10 +808,11 @@ def repressilator():
         end=0,
         step=0.1,
         value=-3,
-        format=bokeh.models.FuncTickFormatter(code="return Math.pow(10, tick).toFixed(6)"),
+        format=bokeh.models.FuncTickFormatter(
+            code="return Math.pow(10, tick).toFixed(6)"
+        ),
     )
     n_slider = bokeh.models.Slider(title="n", start=1, end=5, step=0.1, value=3)
-
 
     def repressilator_rhs(mx, t, beta, gamma, rho, n):
         """
@@ -831,7 +830,6 @@ def repressilator():
             ]
         )
 
-
     # Initial condiations
     x0 = np.array([0, 0, 0, 1, 1.1, 1.2])
 
@@ -848,13 +846,8 @@ def repressilator():
         m1, m2, m3, x1, x2, x3 = x.transpose()
         return t, m1, m2, m3, x1, x2, x3
 
-
     t, m1, m2, m3, x1, x2, x3 = _solve_repressilator(
-        beta_slider.value,
-        gamma_slider.value,
-        rho_slider.value,
-        n_slider.value,
-        40.0,
+        beta_slider.value, gamma_slider.value, rho_slider.value, n_slider.value, 40.0,
     )
 
     cds = bokeh.models.ColumnDataSource(
@@ -862,10 +855,7 @@ def repressilator():
     )
 
     p = bokeh.plotting.figure(
-        frame_width=500,
-        frame_height=200,
-        x_axis_label="t",
-        x_range=[0, 40.0],
+        frame_width=500, frame_height=200, x_axis_label="t", x_range=[0, 40.0],
     )
 
     colors = bokeh.palettes.d3["Category20"][6]
@@ -885,19 +875,13 @@ def repressilator():
         ("x₃", [x3_line]),
     ]
     legend = bokeh.models.Legend(items=legend_items)
-    legend.click_policy = 'hide'
+    legend.click_policy = "hide"
 
     p.add_layout(legend, "right")
 
     # Build the layout
     layout = bokeh.layouts.column(
-        bokeh.layouts.row(
-            beta_slider,
-            gamma_slider,
-            rho_slider,
-            n_slider,
-            width=575,
-        ),
+        bokeh.layouts.row(beta_slider, gamma_slider, rho_slider, n_slider, width=575,),
         bokeh.layouts.Spacer(height=10),
         p,
     )
@@ -910,7 +894,7 @@ def repressilator():
         + jsfuns["utils"]
         + jsfuns["linalg"]
         + jsfuns["repressilator"]
-        + 'callback()'
+        + "callback()"
     )
     callback = bokeh.models.CustomJS(
         args=dict(
@@ -931,6 +915,80 @@ def repressilator():
     p.x_range.js_on_change("end", callback)
 
     return layout
+
+
+def simple_binding_sensitivity():
+    """Make a simple plot of sensitivity for binding of A and B.
+    """
+
+    def sensitivity(a_tot, b_tot, Kd):
+        b = a_tot - b_tot - Kd
+        discrim = b ** 2 + 4 * a_tot * Kd
+
+        return a_tot * (1 - b / np.sqrt(discrim)) / (-b + np.sqrt(discrim))
+
+    a_tot = np.logspace(-2, 2, 1001)
+    b_tot = 1.0
+    Kd_vals = np.logspace(-3, 1, 5)
+
+    colors = bokeh.palettes.Blues9[3:8]
+
+    b0_slider = bokeh.models.Slider(
+        title="total B conc. (µM)",
+        start=-1,
+        end=1,
+        value=np.log10(b_tot),
+        step=0.01,
+        width=200,
+        format=bokeh.models.FuncTickFormatter(
+            code="return Math.pow(10, tick).toFixed(2)"
+        ),
+    )
+
+    p = bokeh.plotting.figure(
+        frame_width=400,
+        height=325,
+        x_axis_label="total A conc. (µM)",
+        y_axis_label="sensitivity",
+        x_axis_type="log",
+        y_axis_type="log",
+        x_range=[a_tot.min(), a_tot.max()],
+    )
+
+    cds = bokeh.models.ColumnDataSource(
+        {
+            **{"a0": a_tot},
+            **{f"s{i}": sensitivity(a_tot, b_tot, Kd) for i, Kd in enumerate(Kd_vals)},
+        }
+    )
+
+    for i, (color, Kd) in enumerate(zip(colors, Kd_vals)):
+        p.line(
+            source=cds,
+            x="a0",
+            y=f"s{i}",
+            line_width=2,
+            color=color,
+            legend_label=str(Kd) + " µM",
+        )
+
+    span = bokeh.models.Span(location=10 ** b0_slider.value, dimension="height")
+    p.add_layout(span)
+
+    p.legend.location = "bottom_right"
+    p.legend.title = "Kd"
+
+    # Set up callbacks
+    js_code = jsfuns["simple_binding_sensitivity"] + "callback()"
+    callback = bokeh.models.CustomJS(
+        args=dict(cds=cds, b0Slider=b0_slider, span=span), code=js_code,
+    )
+
+    b0_slider.js_on_change("value", callback)
+
+    return bokeh.layouts.column(
+        bokeh.layouts.row(bokeh.models.Spacer(width=153), b0_slider), p
+    )
 
 
 def turing_dispersion_relation():

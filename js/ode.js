@@ -10,8 +10,12 @@ function rkf45(
     sBounds,
     hMin,
     enforceNonnegative,
+    event,
+    eventArgs,
     debugMode,
 ) {
+    // event must be a function with call signature event(y, t, ...eventArgs)
+
     // Set up return variables
     let tSol = [timePoints[0]];
     let t = timePoints[0];
@@ -37,11 +41,18 @@ function rkf45(
     if (hMin === undefined) hMin = 0.0;
     if (enforceNonnegative === undefined) enforceNonnegative = true;
     if (maxDeadSteps === undefined) maxDeadSteps = 10;
+    if (event === undefined) {
+        event = (function(y, t) {return true;});
+        eventArgs = [];
+    }
+    else if (eventArgs === undefined) {
+        eventArgs = [];
+    }
     if (debugMode === undefined) debugMode = false;
 
-    while (i < iMax && nDeadSteps < maxDeadSteps) {
+    while (i < iMax && nDeadSteps < maxDeadSteps && event(y, t, ...eventArgs)) {
         nDeadSteps = 0;
-        while (t < timePoints[i] && nDeadSteps < maxDeadSteps) {
+        while (t < timePoints[i] && nDeadSteps < maxDeadSteps && event(y, t, ...eventArgs)) {
             [y0, t, h, deadStep] = rkf45Step(
                 f,
                 y0,
@@ -465,7 +476,7 @@ function vsimex(
 
             // DEBUG
 		    nSteps += 1;
-		    // END EDEBUG
+		    // END DEBUG
         }
         if (t > tSol[tSol.length - 1]) {
             y.push(y0);
