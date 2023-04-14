@@ -88,7 +88,7 @@ def michaelis_menten_approx():
         value=-2,
         step=0.05,
         width=100,
-        format=bokeh.models.FuncTickFormatter(
+        format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(2)"
         ),
     )
@@ -99,7 +99,7 @@ def michaelis_menten_approx():
         value=0.0,
         step=0.01,
         width=100,
-        format=bokeh.models.FuncTickFormatter(
+        format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(2)"
         ),
     )
@@ -140,8 +140,8 @@ def michaelis_menten_approx():
 
     # Make the plot
     p = bokeh.plotting.figure(
-        plot_width=500,
-        plot_height=250,
+        frame_width=500,
+        frame_height=250,
         x_axis_label="dimensionless time",
         y_axis_label="dimensionless concentration",
         x_range=[0, 10],
@@ -363,7 +363,7 @@ def autorepressor_response_to_pulse():
 
     # set up plot
     p = bokeh.plotting.figure(
-        frame_width=375,
+        frame_width=400,
         frame_height=250,
         x_axis_label="time",
         y_axis_label="normalized concentration",
@@ -788,7 +788,7 @@ def repressilator():
         end=4,
         step=0.1,
         value=1,
-        format=bokeh.models.FuncTickFormatter(
+        format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(2)"
         ),
     )
@@ -798,7 +798,7 @@ def repressilator():
         end=0,
         step=0.1,
         value=0,
-        format=bokeh.models.FuncTickFormatter(
+        format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(3)"
         ),
     )
@@ -808,7 +808,7 @@ def repressilator():
         end=0,
         step=0.1,
         value=-3,
-        format=bokeh.models.FuncTickFormatter(
+        format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(6)"
         ),
     )
@@ -940,7 +940,7 @@ def simple_binding_sensitivity():
         value=np.log10(b_tot),
         step=0.01,
         width=200,
-        format=bokeh.models.FuncTickFormatter(
+        format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(2)"
         ),
     )

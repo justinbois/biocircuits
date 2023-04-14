@@ -76,8 +76,8 @@ def ecdf(
     x_axis_label=None,
     y_axis_label=None,
     title=None,
-    plot_height=300,
-    plot_width=450,
+    frame_height=300,
+    frame_width=450,
     formal=False,
     complementary=False,
     x_axis_type="linear",
@@ -113,9 +113,9 @@ def ecdf(
         Label for the y-axis. Ignored if `p` is not None.
     title : str, default None
         Title of the plot. Ignored if `p` is not None.
-    plot_height : int, default 300
+    frame_height : int, default 300
         Height of plot, in pixels. Ignored if `p` is not None.
-    plot_width : int, default 450
+    frame_width : int, default 450
         Width of plot, in pixels. Ignored if `p` is not None.
     formal : bool, default False
         If True, make a plot of a formal ECDF (staircase). If False,
@@ -156,8 +156,8 @@ def ecdf(
     # Instantiate Bokeh plot if not already passed in
     if p is None:
         p = bokeh.plotting.figure(
-            plot_height=plot_height,
-            plot_width=plot_width,
+            frame_height=frame_height,
+            frame_width=frame_width,
             x_axis_label=x_axis_label,
             y_axis_label=y_axis_label,
             x_axis_type=x_axis_type,
@@ -385,9 +385,9 @@ def xyt_plot(
         kwargs["x_axis_label"] = "x"
     if "y_axis_label" not in kwargs:
         kwargs["y_axis_label"] = "y"
-    if "frame_height" not in kwargs and "plot_height" not in kwargs:
+    if "frame_height" not in kwargs and "height" not in kwargs:
         kwargs["frame_height"] = 275
-    if "frame_width" not in kwargs and "plot_width" not in kwargs:
+    if "frame_width" not in kwargs and "width" not in kwargs:
         kwargs["frame_width"] = 450
     if "y_range" not in kwargs:
         total_range_min = np.concatenate(y).min()
@@ -711,15 +711,13 @@ def _baseplot(p, **kwargs):
         if "x_range" in kwargs or "y_range" in kwargs:
             raise RuntimeError("Cannot specify ranges in kwargs.")
         if (
-            "plot_height" not in kwargs
-            or "frame_height" not in kwargs
+            "frame_height" not in kwargs
             or "height" not in kwargs
         ):
             kwargs["frame_height"] = 260
         if (
-            "plot_width" not in kwargs
+            "frame_width" not in kwargs
             or "frame_width" not in kwargs
-            or "width" not in kwargs
         ):
             kwargs["frame_width"] = 260
         if "tools" not in kwargs:
@@ -1232,10 +1230,10 @@ def imshow(
         intensity to color. If None, default is 256-level Viridis.
         If `im` is a color image, then `color_mapper` can either be
         'rgb' or 'cmy' (default), for RGB or CMY merge of channels.
-    plot_height : int
+    frame_height : int
         Height of the plot in pixels. The width is scaled so that the
         x and y distance between pixels is the same.
-    plot_width : int or None (default)
+    frame_width : int or None (default)
         If None, the width is scaled so that the x and y distance
         between pixels is approximately the same. Otherwise, the width
         of the plot in pixels.

@@ -53,8 +53,45 @@ def _ffl_rhs(beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic):
 
 
 def solve_ffl(beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic, t, t_step_down, x_0):
-    """Solve an FFL. The dynamics are given by
-    `rhs`, the output of `ffl_rhs()`.
+    """Solve an FFL. The dimensionless equations are
+
+    .. math::
+        \begin{align}
+        \frac{\mathrm{d}y}{\mathrm{d}t} &= \beta\,\frac{(\kappa x)^{n_{xy}}}{1+(\kappa x)^{n_{xy}}} - y,\\[1em]
+        \gamma^{-1}\,\frac{\mathrm{d}z}{\mathrm{d}t} &= \frac{x^{n_{xz}}}{(1 + x^{n_{xz}})\,(1 + y^{n_{yz}})} - z.
+        \end{align}
+
+    These are solved for a step up in x from zero at time zero, and
+    possibly for a step down in x at a later time.
+
+    Parameters
+    ----------
+    beta : float
+        Parameter β in the dynamical equations.
+    gamma : float
+        Parameter γ in the dynamical equations.
+    n_xy : float
+        Parameter n_xy in the dynamical equations.
+    n_xz : float
+        Parameter n_xz in the dynamical equations.
+    n_yz : float
+        Parameter n_yz in the dynamical equations.
+    ffl : string
+        One of 'c1', 'c2', 'c3', 'c4', 'c5', 'i1', 'i2', 'i3', 'i4'
+    logic : string
+        One of 'and', 'or'
+    t : array_like
+        Time points for the solution.
+    t_step_down : float
+        Time when the step in x goes back down to zero.
+    x_0 : float
+        Height of step in x.
+
+    Returns
+    -------
+    output : ndarray, shape (len(t), 2)
+        Solution of ODEs. Column 0 contains y values and column 1
+        has z values.
     """
     if t[0] != 0:
         raise RuntimeError("time must start at zero.")
@@ -93,12 +130,63 @@ def plot_ffl(
     n_yz=1.0,
     ffl="c1",
     logic="and",
-    t=np.linspace(0, 20, 200),
+    t=None,
     t_step_down=10.0,
     x_0=1.0,
     normalized=False,
     **kwargs,
 ):
+    """Solve and plot FFL. The dimensionless equations are
+
+    .. math::
+        \begin{align}
+        \frac{\mathrm{d}y}{\mathrm{d}t} &= \beta\,\frac{(\kappa x)^{n_{xy}}}{1+(\kappa x)^{n_{xy}}} - y,\\[1em]
+        \gamma^{-1}\,\frac{\mathrm{d}z}{\mathrm{d}t} &= \frac{x^{n_{xz}}}{(1 + x^{n_{xz}})\,(1 + y^{n_{yz}})} - z.
+        \end{align}
+
+    These are solved for a step up in x from zero at time zero, and
+    possibly for a step down in x at a later time.
+
+    Parameters
+    ----------
+    beta : float, default 1.0
+        Parameter β in the dynamical equations.
+    gamma : float, default 1.0
+        Parameter γ in the dynamical equations.
+    n_xy : float, default 1.0
+        Parameter n_xy in the dynamical equations.
+    n_xz : float, default 1.0
+        Parameter n_xz in the dynamical equations.
+    n_yz : float, default 1.0
+        Parameter n_yz in the dynamical equations.
+    ffl : string, dafault 'c1'
+        One of 'c1', 'c2', 'c3', 'c4', 'c5', 'i1', 'i2', 'i3', 'i4'
+    logic : string, default 'and'
+        One of 'and', 'or'
+    t : array_like, default np.linspace(0, 20, 200)
+        Time points for the solution.
+    t_step_down : float
+        Time when the step in x goes back down to zero.
+    x_0 : float
+        Height of step in x.
+    normalized : bool, default False
+        If True, normalize solutions such that maximal value is 1.
+    kwargs : dict
+        All other kwargs to be passed into `bokeh.plotting.figure()`.
+
+    Returns
+    -------
+    p : bokeh.plotting.Figure instance
+        Resulting plot
+    cds : bokeh.models.ColumnDataSource instance
+        ColumnDataSource with t, y, and z values
+    cds_x : bokeh.models.ColumnDataSource instance
+        ColumnDataSource with t and x values
+    """"
+
+    if t is None:
+        t = np.linspace(0, 20, 200)
+
     yz = solve_ffl(
         beta, gamma, kappa, n_xy, n_xz, n_yz, ffl, logic, t, t_step_down, x_0
     )
