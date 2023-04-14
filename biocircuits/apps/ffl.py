@@ -182,7 +182,7 @@ def plot_ffl(
         ColumnDataSource with t, y, and z values
     cds_x : bokeh.models.ColumnDataSource instance
         ColumnDataSource with t and x values
-    """"
+    """
 
     if t is None:
         t = np.linspace(0, 20, 200)
