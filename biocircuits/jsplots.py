@@ -152,22 +152,52 @@ def michaelis_menten_approx():
 
     # Populate glyphs
     p.line(
-        source=cds, x="t", y="ces", line_width=2, color=colors[0], legend_label="ES",
+        source=cds,
+        x="t",
+        y="ces",
+        line_width=2,
+        color=colors[0],
+        legend_label="ES",
     )
     p.line(
-        source=cds, x="t", y="cs", line_width=2, color=colors[1], legend_label="S",
+        source=cds,
+        x="t",
+        y="cs",
+        line_width=2,
+        color=colors[1],
+        legend_label="S",
     )
     p.line(
-        source=cds, x="t", y="cp", line_width=2, color=colors[2], legend_label="P",
+        source=cds,
+        x="t",
+        y="cp",
+        line_width=2,
+        color=colors[2],
+        legend_label="P",
     )
     p.line(
-        source=cds, x="t", y="ces_approx", line_width=4, color=colors[0], alpha=0.3,
+        source=cds,
+        x="t",
+        y="ces_approx",
+        line_width=4,
+        color=colors[0],
+        alpha=0.3,
     )
     p.line(
-        source=cds, x="t", y="cs_approx", line_width=4, color=colors[1], alpha=0.3,
+        source=cds,
+        x="t",
+        y="cs_approx",
+        line_width=4,
+        color=colors[1],
+        alpha=0.3,
     )
     p.line(
-        source=cds, x="t", y="cp_approx", line_width=4, color=colors[2], alpha=0.3,
+        source=cds,
+        x="t",
+        y="cp_approx",
+        line_width=4,
+        color=colors[2],
+        alpha=0.3,
     )
 
     p.legend.location = "center_right"
@@ -218,8 +248,7 @@ def michaelis_menten_approx():
 
 
 def gaussian_pulse():
-    """Make a plot of a Gaussian pulse.
-    """
+    """Make a plot of a Gaussian pulse."""
     # t/s data for plotting
     t_0 = 4.0
     tau = 2.0
@@ -250,7 +279,8 @@ def gaussian_pulse():
     # JavaScript callback
     js_code = jsfuns["gaussian_pulse"] + "callback()"
     callback = bokeh.models.CustomJS(
-        args=dict(cds=cds, t0_slider=t0_slider, tau_slider=tau_slider), code=js_code,
+        args=dict(cds=cds, t0_slider=t0_slider, tau_slider=tau_slider),
+        code=js_code,
     )
     t0_slider.js_on_change("value", callback)
     tau_slider.js_on_change("value", callback)
@@ -477,10 +507,18 @@ def autorepressor_response_to_pulse():
         p,
         bokeh.layouts.Spacer(width=30),
         bokeh.layouts.column(
-            log_beta0_slider, log_gamma_slider, log_k_slider, n_slider, legend_toggle,
+            log_beta0_slider,
+            log_gamma_slider,
+            log_k_slider,
+            n_slider,
+            legend_toggle,
         ),
         bokeh.layouts.column(
-            log_ks_slider, ns_slider, t0_slider, tau_slider, normalize_toggle,
+            log_ks_slider,
+            ns_slider,
+            t0_slider,
+            tau_slider,
+            normalize_toggle,
         ),
     )
     return layout
@@ -504,10 +542,20 @@ def autoactivator_fixed_points():
     # Set up sliders
     params = [
         dict(
-            name="γ", start=0.1, end=4, step=0.1, value=gamma, long_name="gamma_slider",
+            name="γ",
+            start=0.1,
+            end=4,
+            step=0.1,
+            value=gamma,
+            long_name="gamma_slider",
         ),
         dict(
-            name="β", start=0.1, end=15, step=0.1, value=beta, long_name="beta_slider",
+            name="β",
+            start=0.1,
+            end=15,
+            step=0.1,
+            value=beta,
+            long_name="beta_slider",
         ),
         dict(name="k", start=1, end=5, step=0.1, value=k, long_name="k_slider"),
         dict(name="n", start=0.1, end=10, step=0.1, value=n, long_name="n_slider"),
@@ -588,10 +636,20 @@ def toggle_nullclines():
     # Set up sliders
     params = [
         dict(
-            name="βx", start=0.1, end=20, step=0.1, value=10, long_name="beta_x_slider",
+            name="βx",
+            start=0.1,
+            end=20,
+            step=0.1,
+            value=10,
+            long_name="beta_x_slider",
         ),
         dict(
-            name="βy", start=0.1, end=20, step=0.1, value=10, long_name="beta_y_slider",
+            name="βy",
+            start=0.1,
+            end=20,
+            step=0.1,
+            value=10,
+            long_name="beta_y_slider",
         ),
         dict(name="n", start=1, end=10, step=0.1, value=4, long_name="n_slider"),
     ]
@@ -675,8 +733,7 @@ def toggle_nullclines():
 
 
 def protein_repressilator():
-    """Plot the dynamics of a protein-only repressilator circuit.
-    """
+    """Plot the dynamics of a protein-only repressilator circuit."""
 
     def protein_repressilator_rhs(x, t, beta, n):
         """
@@ -718,7 +775,10 @@ def protein_repressilator():
     colors = colorcet.b_glasbey_category10[:3]
 
     p_rep = bokeh.plotting.figure(
-        frame_width=550, frame_height=200, x_axis_label="t", x_range=[0, 40.0],
+        frame_width=550,
+        frame_height=200,
+        x_axis_label="t",
+        x_range=[0, 40.0],
     )
 
     cds = bokeh.models.ColumnDataSource(data=dict(t=t, x1=x[0], x2=x[1], x3=x[2]))
@@ -737,7 +797,10 @@ def protein_repressilator():
 
     # Set up plot
     p_phase = bokeh.plotting.figure(
-        frame_width=200, frame_height=200, x_axis_label="x₁", y_axis_label="x₂",
+        frame_width=200,
+        frame_height=200,
+        x_axis_label="x₁",
+        y_axis_label="x₂",
     )
 
     p_phase.line(source=cds, x="x1", y="x2", line_width=2)
@@ -754,7 +817,10 @@ def protein_repressilator():
     )
     callback = bokeh.models.CustomJS(
         args=dict(
-            cds=cds, xRange=p_rep.x_range, betaSlider=beta_slider, nSlider=n_slider,
+            cds=cds,
+            xRange=p_rep.x_range,
+            betaSlider=beta_slider,
+            nSlider=n_slider,
         ),
         code=js_code,
     )
@@ -778,8 +844,7 @@ def protein_repressilator():
 
 
 def repressilator():
-    """Plot the dynamics of a repressilator circuit.
-    """
+    """Plot the dynamics of a repressilator circuit."""
 
     # Sliders
     beta_slider = bokeh.models.Slider(
@@ -788,6 +853,7 @@ def repressilator():
         end=4,
         step=0.1,
         value=1,
+        width=125,
         format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(2)"
         ),
@@ -798,6 +864,7 @@ def repressilator():
         end=0,
         step=0.1,
         value=0,
+        width=125,
         format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(3)"
         ),
@@ -808,11 +875,19 @@ def repressilator():
         end=0,
         step=0.1,
         value=-3,
+        width=125,
         format=bokeh.models.CustomJSTickFormatter(
             code="return Math.pow(10, tick).toFixed(6)"
         ),
     )
-    n_slider = bokeh.models.Slider(title="n", start=1, end=5, step=0.1, value=3)
+    n_slider = bokeh.models.Slider(
+        title="n",
+        start=1,
+        end=5,
+        step=0.1,
+        value=3,
+        width=125,
+    )
 
     def repressilator_rhs(mx, t, beta, gamma, rho, n):
         """
@@ -847,7 +922,11 @@ def repressilator():
         return t, m1, m2, m3, x1, x2, x3
 
     t, m1, m2, m3, x1, x2, x3 = _solve_repressilator(
-        beta_slider.value, gamma_slider.value, rho_slider.value, n_slider.value, 40.0,
+        beta_slider.value,
+        gamma_slider.value,
+        rho_slider.value,
+        n_slider.value,
+        40.0,
     )
 
     cds = bokeh.models.ColumnDataSource(
@@ -855,7 +934,10 @@ def repressilator():
     )
 
     p = bokeh.plotting.figure(
-        frame_width=500, frame_height=200, x_axis_label="t", x_range=[0, 40.0],
+        frame_width=500,
+        frame_height=200,
+        x_axis_label="t",
+        x_range=[0, 40.0],
     )
 
     colors = bokeh.palettes.d3["Category20"][6]
@@ -881,7 +963,13 @@ def repressilator():
 
     # Build the layout
     layout = bokeh.layouts.column(
-        bokeh.layouts.row(beta_slider, gamma_slider, rho_slider, n_slider, width=575,),
+        bokeh.layouts.row(
+            beta_slider,
+            gamma_slider,
+            rho_slider,
+            n_slider,
+            width=575,
+        ),
         bokeh.layouts.Spacer(height=10),
         p,
     )
@@ -918,8 +1006,7 @@ def repressilator():
 
 
 def simple_binding_sensitivity():
-    """Make a simple plot of sensitivity for binding of A and B.
-    """
+    """Make a simple plot of sensitivity for binding of A and B."""
 
     def sensitivity(a_tot, b_tot, Kd):
         b = a_tot - b_tot - Kd
@@ -981,7 +1068,8 @@ def simple_binding_sensitivity():
     # Set up callbacks
     js_code = jsfuns["simple_binding_sensitivity"] + "callback()"
     callback = bokeh.models.CustomJS(
-        args=dict(cds=cds, b0Slider=b0_slider, span=span), code=js_code,
+        args=dict(cds=cds, b0Slider=b0_slider, span=span),
+        code=js_code,
     )
 
     b0_slider.js_on_change("value", callback)
@@ -1118,8 +1206,7 @@ def turing_dispersion_relation():
 
 
 def lotka_volterra():
-    """Make a plot of the Lotka-Volterra system
-    """
+    """Make a plot of the Lotka-Volterra system"""
     """Test to plot Lotka-Volterra"""
     t = np.linspace(0.0, 20.0, 500)
 
@@ -1160,9 +1247,16 @@ def lotka_volterra():
 
     # Set up plots
     p_phase = bokeh.plotting.figure(
-        frame_width=200, frame_height=200, x_axis_label="x", y_axis_label="y",
+        frame_width=200,
+        frame_height=200,
+        x_axis_label="x",
+        y_axis_label="y",
     )
-    p = bokeh.plotting.figure(frame_width=550, frame_height=200, x_axis_label="t",)
+    p = bokeh.plotting.figure(
+        frame_width=550,
+        frame_height=200,
+        x_axis_label="t",
+    )
 
     # The data source
     cds = bokeh.models.ColumnDataSource(dict(t=t, x=x, y=y))

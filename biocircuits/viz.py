@@ -209,6 +209,154 @@ def ecdf(
     return p
 
 
+def heatmap(
+    x,
+    y,
+    z,
+    palette=bokeh.palettes.Viridis256,
+    colorbar=True,
+    log_color=False,
+    low=None,
+    high=None,
+    rotate_xticks=False,
+    xtick_overrides=None,
+    ytick_overrides=None,
+    **kwargs,
+):
+    """
+    Create a heat map plot where x and y are categorical variables and
+    z is a quantitative variable.
+
+    Parameters
+    ----------
+    x : array_like, shape (nx,)
+        1D array of x-values. Each value should be unique. All entries
+        are converted to strings, since for a heatmap axes are
+        categorical.
+    y : array_like, shape (ny,)
+        1D array of y-values. Each value should be unique. All entries
+        are converted to strings, since for a heatmap axes are
+        categorical.
+    z : array_like, shape (nx, ny)
+        2D array of z-values. These must be numerical. Entry `z[i, j]`
+        corresponds to `x[i]` and `y[j]`.
+    palette : list of hex strings, default bokeh.palettes.Viridis256
+        Color palette for mapping z-values to color.
+    colorbar : bool, default True
+        If True, include a color bar.
+    log_color : bool, default False
+        If True, scale color logarithmically. Otherwise scale linearly.
+    low : None or float, default None
+        Low value to use in color mapping. If None, use minimal value
+        of `z`.
+    high : None or float, default None
+        Low value to use in color mapping. If None, use maximal non-NaN
+        value of `z`.
+    rotate_x_ticks : bool, default False
+        If True, rotate x tick labels 60 degrees. This helps prevent
+        clashes.
+    xtick_overrides : None or list of length nx, default None
+        List of strings to override x tick labels with. If None, entries
+        in `x` are used.
+    ytick_overrides : None or list of length ny, default None
+        List of strings to override y tick labels with. If None, entries
+        in `y` are used.
+    kwargs : dict
+        Keyword arguments passed to `bokeh.plotting.figure()` when
+        instantiating the figure.
+
+    Returns
+    -------
+    output : bokeh.plotting.Figure instance
+        Figure with heatmap.
+
+    """
+    # Convert to categorical (strings)
+    x = [str(x_) for x_ in x]
+    y = [str(y_) for y_ in y]
+
+    # Make sure z is of the right shape
+    z = np.array(z)
+    if z.shape != (len(y), len(x)):
+        raise RuntimeError("`z` must be a 2D array of shape (len(y), len(x)).")
+
+    # Default axis settings
+    if "toolbar_location" not in kwargs:
+        kwargs["toolbar_location"] = "above"
+    if "frame_width" not in kwargs:
+        kwargs["frame_width"] = 300
+    if "frame_height" not in kwargs:
+        kwargs["frame_height"] = 300
+
+    # x_range and y_range are to be determined, not specified
+    if "x_range" in kwargs or "y_range" in kwargs:
+        raise RuntimeError("`x_range` and `y_range` cannot be specifed in input.")
+
+    # Build plot
+    p = bokeh.plotting.figure(
+        x_range=[-0.5, len(x) - 0.5], y_range=[-0.5, len(y) - 0.5], **kwargs
+    )
+    p.xaxis.ticker = np.arange(len(x))
+    p.yaxis.ticker = np.arange(len(y))
+    if xtick_overrides is None:
+        p.xaxis.major_label_overrides = {tick: x_ for tick, x_ in enumerate(x)}
+    else:
+        if len(xtick_overrides) != len(x):
+            raise RuntimeError("`xtick_overrides` must be the same length as `x`.")
+        p.xaxis.major_label_overrides = {
+            tick: override for tick, override in enumerate(xtick_overrides)
+        }
+    if ytick_overrides is None:
+        p.yaxis.major_label_overrides = {tick: y_ for tick, y_ in enumerate(y)}
+    else:
+        if len(ytick_overrides) != len(y):
+            raise RuntimeError("`ytick_overrides` must be the same length as `y`.")
+        p.yaxis.major_label_overrides = {
+            tick: override for tick, override in enumerate(ytick_overrides)
+        }
+
+    # Style the plot
+    p.grid.grid_line_color = None
+    p.axis.axis_line_color = None
+    p.axis.major_tick_line_color = None
+    if rotate_xticks:
+        p.xaxis.major_label_orientation = np.pi / 3
+
+    # Build column data source, mapping x and y values of integer indices
+    x_source = list(range(len(x))) * len(y)
+    y_source = [y_ for y_ in range(len(y)) for _ in range(len(x))]
+    z_source = [z_ for z_row in z for z_ in z_row]
+
+    source = bokeh.models.ColumnDataSource(dict(x=x_source, y=y_source, z=z_source))
+
+    # High and low values of color
+    low = low if low is not None else np.nanmin(z)
+    high = high if high is not None else np.nanmax(z)
+
+    # Color mapper
+    if log_color:
+        mapper = bokeh.models.LogColorMapper(palette=palette, low=low, high=high)
+    else:
+        mapper = bokeh.models.LinearColorMapper(palette=palette, low=low, high=high)
+
+    # Add glyphs
+    glyphs = p.rect(
+        x="x",
+        y="y",
+        width=1,
+        height=1,
+        source=source,
+        fill_color={"field": "z", "transform": mapper},
+        line_color=None,
+    )
+
+    # Colorbar
+    if colorbar:
+        p.add_layout(glyphs.construct_color_bar(border_line_color=None), "right")
+
+    return p
+
+
 def interactive_xy_plot(
     base_plot, callback, slider_params=(), toggle_params=(), extra_args=()
 ):
@@ -277,12 +425,12 @@ def interactive_xy_plot(
         # Make sure axis ranges have no padding
         if type(p.x_range) == bokeh.models.ranges.Range1d:
             start, end = p.x_range.start, p.x_range.end
-            p.x_range = bokeh.models.ranges.DataRange1d(p.x_range)
+            p.x_range = bokeh.models.ranges.DataRange1d()
             p.x_range.start = start
             p.x_range.end = end
         if type(p.y_range) == bokeh.models.ranges.Range1d:
             start, end = p.y_range.start, p.y_range.end
-            p.y_range = bokeh.models.ranges.DataRange1d(p.y_range)
+            p.y_range = bokeh.models.ranges.DataRange1d()
             p.y_range.start = start
             p.y_range.end = end
         p.x_range.range_padding = 0
@@ -363,6 +511,11 @@ def xyt_plot(
         position. Ignored if `legend_names` is None.
     palette : List of colors default bokeh.palettes.d3['Category10'][10]
         Color palette to use for curves.
+    glyph_kwargs : dict
+        Keyword arguments to be passed to the glyph renderer, e.g.,
+        `p.line(**glyph_kwargs)`.
+    time_slider_title : str, default "time"
+        Title for the slider for time.
     kwargs :
         All other kwargs are passed to bokeh.plotting.figure() in
         creating the figure.
@@ -710,15 +863,9 @@ def _baseplot(p, **kwargs):
             kwargs["y_axis_label"] = "y"
         if "x_range" in kwargs or "y_range" in kwargs:
             raise RuntimeError("Cannot specify ranges in kwargs.")
-        if (
-            "frame_height" not in kwargs
-            or "height" not in kwargs
-        ):
+        if "frame_height" not in kwargs or "height" not in kwargs:
             kwargs["frame_height"] = 260
-        if (
-            "frame_width" not in kwargs
-            or "frame_width" not in kwargs
-        ):
+        if "frame_width" not in kwargs or "frame_width" not in kwargs:
             kwargs["frame_width"] = 260
         if "tools" not in kwargs:
             tools = "box_zoom,save,reset"
@@ -896,12 +1043,12 @@ def _zoomable_phase_portrait(
         # Make sure axis ranges have no padding
         if type(p.x_range) == bokeh.models.ranges.Range1d:
             start, end = p.x_range.start, p.x_range.end
-            p.x_range = bokeh.models.ranges.DataRange1d(p.x_range)
+            p.x_range = bokeh.models.ranges.DataRange1d()
             p.x_range.start = start
             p.x_range.end = end
         if type(p.y_range) == bokeh.models.ranges.Range1d:
             start, end = p.y_range.start, p.y_range.end
-            p.y_range = bokeh.models.ranges.DataRange1d(p.y_range)
+            p.y_range = bokeh.models.ranges.DataRange1d()
             p.y_range.start = start
             p.y_range.end = end
         p.x_range.range_padding = 0
@@ -1060,7 +1207,9 @@ def _zoomable_phase_portrait(
                         bokeh.models.Arrow(
                             line_alpha=0,
                             end=bokeh.models.NormalHead(
-                                fill_color=color, line_alpha=0, size=7,
+                                fill_color=color,
+                                line_alpha=0,
+                                size=7,
                             ),
                             x_start=tail[0],
                             y_start=tail[1],
@@ -1500,4 +1649,3 @@ def phase_portrait2(
     -------
     output : bokeh.plotting.Figure instance populated with streamplot
     """
-
