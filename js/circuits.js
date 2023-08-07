@@ -1,3 +1,12 @@
+/** 
+ * Right-hand side of the Lotka-Volterra system
+ * @param {array} xy - 2-array with values for hares and foxes
+ * @param {float} t - time point (not used, but necessary for us in rkf solver)
+ * @param {float} alpha - parameter alpha for Lotka-Volterra model
+ * @param {float} beta - parameter beta for Lotka-Volterra model
+ * @param {float} gamma - parameter gamma for Lotka-Volterra model
+ * @param {float} delta - parameter delta for Lotka-Volterra model
+ */
 function lotkaVolterra(xy, t, alpha, beta, gamma, delta) {
 	// Unpack
 	var [x, y] = xy;
@@ -48,6 +57,7 @@ function repressilator(x, t, beta, n) {
 		beta * rep_hill(x2, n) - x3
 	]
 }
+
 
 
 // module.exports = {

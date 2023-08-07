@@ -1,8 +1,11 @@
+import os
 import warnings
 
 import numpy as np
 
 import matplotlib.streamplot
+
+from IPython.display import HTML
 
 import bokeh.application
 import bokeh.application.handlers
@@ -10,10 +13,107 @@ import bokeh.layouts
 import bokeh.models
 import bokeh.palettes
 import bokeh.plotting
+import bokeh.resources
 
 import colorcet
 
 from . import utils
+
+
+def addjs_jinja(*args):
+    """Update jinja template for Bokeh plot to include external JS
+    libraries. Accepts one or more external JS libraries.
+
+    Parameters
+    ----------
+    lib1 : str
+        String containing path to external JS library to load.
+    lib2 : str
+        String containing path to second external JS library to load.
+
+    Returns
+    -------
+    output : str
+        Text to be passed as `template` in call to `bokeh.io.save()` or
+        `bokeh.io.show()`.
+
+    Examples
+    --------
+    To include mathjs, so the following.
+    ```
+    # Assume there is a layout some callbacks using mathjs called `layout`
+    mathjs_url = "https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.9.1/math.js"
+    template = addjs_jinja(mathjs_url)
+    bokeh.io.save(layout, template=template)
+    ```
+    """
+    template = """
+{% block preamble %}
+"""
+    for lib in args:
+        template += f'<script src="{lib}"></script>\n'
+
+    template += "{% endblock %}\n"
+
+    return template
+
+
+def bokeh_show(bokeh_object, filename=None, **save_kwargs):
+    """Show a bokeh_object by saving it as an HTML file and then using
+    IPython.HTML to display it in a notebook. This is used in place of
+    bokeh.io.show() when a custom Jinja template is needed, for example
+    when an external JavaScript library needs to be loaded.
+
+    Parameters
+    ----------
+    bokeh_object : plot, layout, etc.
+        Bokeh object to be displayed.
+    filename : str or None, default None
+        If given, the HTML file is stored at the path specified.
+        Otherwise it is stored as bokehplot_########.html, where the
+        numbers are generated sequentially.
+    save_kwargs : dict
+        All other kwargs are passed to bokeh.io.save(). Most commonly,
+        this will be a `template` kwarg containing a Jinja template.
+
+    Returns
+    -------
+    output : IPython.core.display.HTML instance
+        IPython HTML rendering.
+
+    Notes
+    -----
+    .. This should be used in place of bokeh.io.show() ONLY when a
+       custom Jinja template is needed. In other circumstances, use
+       `bokeh.io.show()`.
+    """
+    if filename is None:
+        filename = "bokehplot_00000000.html"
+        i = 1
+        while i < 99999999 and os.path.isfile(filename):
+            filename = "bokehplot_{0:08d}.html".format(i)
+            i += 1
+
+        if i == 99999999:
+            raise RuntimeError(
+                "Cannot generate generic file name, as all filenames are used."
+            )
+
+    if "resources" in save_kwargs:
+        resources = save_kwargs.pop("resources")
+    else:
+        resources = bokeh.resources.CDN
+
+    if "title" in save_kwargs:
+        title = save_kwargs.pop("title")
+    else:
+        title = "Bokeh Plot"
+
+    bokeh.io.save(
+        bokeh_object, filename=filename, resources=resources, title=title, **save_kwargs
+    )
+
+    return HTML(filename)
 
 
 def _ecdf_vals(data, formal=False, complementary=False):

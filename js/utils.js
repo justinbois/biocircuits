@@ -83,3 +83,14 @@ function nanArray() {
 
     return x;
 }
+
+
+function isClose(x, y, epsilon) {
+    /*
+     * Return True if |x - y| are within epsilon of each other.
+     */
+    if (epsilon == null) {
+        epsilon = 0.0000001;
+    }
+    return Math.abs(x - y) < epsilon;
+}

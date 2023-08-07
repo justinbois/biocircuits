@@ -58,6 +58,373 @@ def _sin_plot():
     return layout
 
 
+def phosphorylation_signal_cascade(plot_inf=False):
+    def eval_array(x, fun, args=()):
+        """Evaluate function fun(x, *args) for each entry in array x,
+        where fun(x, *args) expects scalar x and returns scalar."""
+        return np.array([fun(x_val, *args) for x_val in x])
+
+    def log(x):
+        """Logarithm of nonnegative number with no divide by zero error"""
+        return np.log(x) if x > 0.0 else -np.inf
+
+    def f(s, n):
+        """Convenience function for transfer function"""
+        if np.isinf(n):
+            res = f_infinite_n(s)
+        elif np.isclose(s, 1):
+            res = 1 / (1 + n)
+        else:
+            res = s ** n * (1 - s) / (1 - s ** (n + 1))
+
+        return res
+
+    def f_infinite_n(s):
+        """f when n is infinite"""
+        return 0.0 if s < 1 else (s - 1) / s
+
+    def log_fprime(s, n):
+        """Log of the derivative of f, calculated careful with logsumexp
+        trick."""
+        if np.isinf(n):
+            res = log_fprime_infinite_n(s)
+        elif np.isclose(s, 1):
+            res = np.log(n) - np.log(1 + n) - np.log(2)
+        else:
+            res = (n - 1) * np.log(s) - 2 * np.log(np.abs(1 - s**(n+1)))
+            if s < 1:
+                res += np.log(n) +  np.log(1 - s)
+                res += np.log(1 - s * (1 - s**n) / n / (1 -s))
+            else:
+                res += (n + 1) * np.log(s) + np.log(1 - 1 / s ** n)
+                res += np.log(1 - n * (s - 1) / s / (s**n - 1))
+
+        return res
+
+    def log_fprime_infinite_n(s):
+        if s == 1:
+            res = np.log(0.5)
+        elif s > 1:
+            res = -2 * np.log(s)
+        else:
+            res = -np.inf
+
+        return res
+
+
+    def log_transfer_function(s, xtot, n):
+        tf = transfer_function(s, xtot, n)
+
+        if tf > 0:
+            res = np.log(tf)
+        elif np.isinf(n).any():
+            res = -np.inf
+        else:
+            # Approximate calculation for small s
+            n_prod = np.array([np.prod(n[j + 1 :]) for j in range(len(n))])
+            res = np.prod(n) * np.log(s) + np.sum(n_prod * np.log(xtot))
+
+        return res
+
+    def transfer_function(s, xtot, n):
+        res = xtot[0] * f(s, n[0])
+        for xtot_val, n_val in zip(xtot[1:], n[1:]):
+            res = xtot_val * f(res, n_val)
+
+        return res
+
+    def log_tf_deriv(s, xtot, n):
+        """Can compute the log of the transfer function
+        derivative because it is always ≥ 0
+        """
+        if np.isinf(n).any() and s < 1:
+            res = -np.inf
+        else:
+            # Compute arguments of f_prime function
+            args = [s]
+            for n_val, xtot_val in zip(n[:-1], xtot[:-1]):
+                args.append(xtot_val * f(args[-1], n_val))
+
+            if (np.array(args) == 0.0).any():
+                log_tf = log_transfer_function(s, xtot, n)
+                if np.isinf(log_tf):
+                    res = -np.inf
+                else:
+                    res = np.sum(np.log(n)) - np.log(s) + log_tf
+            else:
+                res = np.sum(np.log(xtot))
+                for n_val, arg in zip(n, args):
+                    res += log_fprime(arg, n_val)
+
+        return res
+
+    def log_sensitivity(s, xtot, n):
+        """Sensistivity, including low-s limit."""
+        if np.isinf(n).any() and s < 1:
+            res = -np.inf
+        else:
+            log_tf = log_transfer_function(s, xtot, n)
+            if log_tf < -300:
+                res = np.sum(np.log(n))
+            else:
+                res = np.log(s) - log_tf + log_tf_deriv(s, xtot, n)
+
+        return res
+
+    # Fixed quantities for plots
+    s = np.logspace(-4, 4, 400)
+    colors = list(bokeh.palettes.Blues7[:4][::-1]) + ["black"]
+
+    fig_kwargs = dict(
+        frame_width=300,
+        frame_height=175,
+        x_axis_type="log",
+        x_axis_label="s",
+        x_range=[s.min(), s.max()],
+    )
+    titles = dict(
+        tf="transfer function", gain="gain", deriv="derivative", sens="sensitivity"
+    )
+    y_axis_labels = titles
+    plots = {
+        feature: bokeh.plotting.figure(
+            **fig_kwargs,
+            y_axis_label=y_axis_labels[feature],
+            title=titles[feature],
+            visible=False,
+        )
+        for feature in ["tf", "gain", "deriv", "sens"]
+    }
+
+    log_plots = {
+        feature: bokeh.plotting.figure(
+            **fig_kwargs,
+            y_axis_type="log",
+            y_axis_label=y_axis_labels[feature],
+            title=titles[feature],
+        )
+        for feature in ["tf", "gain", "deriv", "sens"]
+    }
+    for feature in log_plots:
+        log_plots[feature].y_range.start = 1e-4
+
+    # Link x-ranges
+    for key, p in plots.items():
+        if key != "tf":
+            p.x_range = plots["tf"].x_range
+        log_plots[key].x_range = plots["tf"].x_range
+
+    # Control widgers
+    radio_button_group = bokeh.models.RadioButtonGroup(
+        labels=["log", "linear"],
+        active=0,
+        width=100,
+    )
+    cascade_depth_spinner = bokeh.models.Spinner(
+        low=1, high=5, step=1, value=3,
+        width=100,
+        title="cascade depth",
+    )
+    xtot_sliders = {str(depth): bokeh.models.Slider(
+        start=-2,
+        end=2,
+        value=depth - 1 if depth < 4 else 0,
+        step=0.1,
+        width=100,
+        title=r"$$x_\mathrm{tot}^{(" + str(depth) + r")}$$",
+        format=bokeh.models.CustomJSTickFormatter(
+            code="return Math.pow(10, tick).toFixed(2)"
+        ),
+        visible=depth <= cascade_depth_spinner.value,
+    ) for depth in [1, 2, 3, 4, 5]}
+
+    # Pull our values of sliders for making data for initial plot
+    cascade_depth = int(cascade_depth_spinner.value)
+    xtot = np.array([10 ** xtot_sliders[str(i)].value for i in range(1, cascade_depth_spinner.value+1)])
+
+    # Build column data source
+    log_s = np.log(s)
+    log_tf_1=eval_array(
+        s, log_transfer_function, (xtot, np.array([1] * cascade_depth))
+    )
+    log_tf_2=eval_array(
+        s, log_transfer_function, (xtot, np.array([2] * cascade_depth))
+    )
+    log_tf_3=eval_array(
+        s, log_transfer_function, (xtot, np.array([3] * cascade_depth))
+    )
+    log_tf_4=eval_array(
+        s, log_transfer_function, (xtot, np.array([4] * cascade_depth))
+    )
+    log_tf_inf=eval_array(
+        s, log_transfer_function, (xtot, np.array([np.inf] * cascade_depth))
+    )
+    log_tf_baseline=eval_array(s, log_transfer_function, (xtot[:1], np.array([1])))
+    log_deriv_1=eval_array(s, log_tf_deriv, (xtot, np.array([1] * cascade_depth)))
+    log_deriv_2=eval_array(s, log_tf_deriv, (xtot, np.array([2] * cascade_depth)))
+    log_deriv_3=eval_array(s, log_tf_deriv, (xtot, np.array([3] * cascade_depth)))
+    log_deriv_4=eval_array(s, log_tf_deriv, (xtot, np.array([4] * cascade_depth)))
+    log_deriv_inf=eval_array(
+        s, log_tf_deriv, (xtot, np.array([np.inf] * cascade_depth))
+    )
+    log_deriv_baseline=eval_array(s, log_tf_deriv, (xtot[:1], np.array([1])))
+    log_sens_1=eval_array(s, log_sensitivity, (xtot, np.array([1] * cascade_depth)))
+    log_sens_2=eval_array(s, log_sensitivity, (xtot, np.array([2] * cascade_depth)))
+    log_sens_3=eval_array(s, log_sensitivity, (xtot, np.array([3] * cascade_depth)))
+    log_sens_4=eval_array(s, log_sensitivity, (xtot, np.array([4] * cascade_depth)))
+    log_sens_inf=eval_array(
+        s, log_sensitivity, (xtot, np.array([np.inf] * cascade_depth))
+    )
+    log_sens_baseline=eval_array(s, log_sensitivity, (xtot[:1], np.array([1])))
+
+    data = dict(
+        s=s,
+        tf_1=np.exp(log_tf_1),
+        tf_2=np.exp(log_tf_2),
+        tf_3=np.exp(log_tf_3),
+        tf_4=np.exp(log_tf_4),
+        tf_inf=np.exp(log_tf_inf),
+        tf_baseline=np.exp(log_tf_baseline),
+        deriv_1=np.exp(log_deriv_1),
+        deriv_2=np.exp(log_deriv_2),
+        deriv_3=np.exp(log_deriv_3),
+        deriv_4=np.exp(log_deriv_4),
+        deriv_inf=np.exp(log_deriv_inf),
+        deriv_baseline=np.exp(log_deriv_baseline),
+        gain_1=np.exp(log_tf_1 - log_s),
+        gain_2=np.exp(log_tf_2 - log_s),
+        gain_3=np.exp(log_tf_3 - log_s),
+        gain_4=np.exp(log_tf_4 - log_s),
+        gain_inf=np.exp(log_tf_inf - log_s),
+        gain_baseline=np.exp(log_tf_baseline - log_s),
+        sens_1=np.exp(log_sens_1),
+        sens_2=np.exp(log_sens_2),
+        sens_3=np.exp(log_sens_3),
+        sens_4=np.exp(log_sens_4),
+        sens_inf=np.exp(log_sens_inf),
+        sens_baseline=np.exp(log_sens_baseline),
+    )
+
+    cds = bokeh.models.ColumnDataSource(data=data)
+
+    # Plot baselines
+    plots["tf"].line(source=cds, x="s", y="tf_baseline", color="gray", line_width=2)
+    log_plots["tf"].line(source=cds, x="s", y="tf_baseline", color="gray", line_width=2)
+    plots["deriv"].line(
+        source=cds, x="s", y="deriv_baseline", color="gray", line_width=2
+    )
+    log_plots["deriv"].line(
+        source=cds, x="s", y="deriv_baseline", color="gray", line_width=2
+    )
+    plots["gain"].line(source=cds, x="s", y="gain_baseline", color="gray", line_width=2)
+    log_plots["gain"].line(
+        source=cds, x="s", y="gain_baseline", color="gray", line_width=2
+    )
+    plots["sens"].line(source=cds, x="s", y="sens_baseline", color="gray", line_width=2)
+    log_plots["sens"].line(
+        source=cds, x="s", y="sens_baseline", color="gray", line_width=2
+    )
+
+    radio_button_group.js_on_change(
+        "active",
+        bokeh.models.CustomJS(
+            args=dict(
+                **{
+                    "p_" + feature: plots[feature]
+                    for feature in ["tf", "gain", "deriv", "sens"]
+                },
+                **{
+                    "p_" + feature + "_log": log_plots[feature]
+                    for feature in ["tf", "gain", "deriv", "sens"]
+                },
+            ),
+            code="""
+      if (p_tf_log.visible == true) {
+        p_tf_log.visible = false;
+        p_tf.visible = true;
+        p_gain_log.visible = false;
+        p_gain.visible = true;
+        p_deriv_log.visible = false;
+        p_deriv.visible = true;
+        p_sens_log.visible = false;
+        p_sens.visible = true;
+      }
+      else {
+        p_tf_log.visible = true;
+        p_tf.visible = false;
+        p_gain_log.visible = true;
+        p_gain.visible = false;
+        p_deriv_log.visible = true;
+        p_deriv.visible = false;
+        p_sens_log.visible = true;
+        p_sens.visible = false;
+      }
+    """,
+        ),
+    )
+
+    n_str = ["1", "2", "3", "4", "inf"] if plot_inf else ["1", "2", "3", "4"]
+
+    for feature in ["tf", "gain", "deriv", "sens"]:
+       for color, n in zip(colors, n_str):
+            kwargs = dict(
+                source=cds, x="s", y=feature + "_" + n, color=color, line_width=2
+            )
+            # if feature == "tf":
+            #     kwargs["legend_label"] = "n → ∞" if n == "inf" else f"n = {n}"
+            plots[feature].line(**kwargs)
+            log_plots[feature].line(**kwargs)
+        # if feature == "tf":
+        #     plots[feature].legend.location = "bottom_right"
+        #     log_plots[feature].legend.location = "bottom_right"
+
+    # JavaScript callback
+    js_code = jsfuns["cascade_signal"] + jsfuns["utils"] + "callback()"
+
+    callback = bokeh.models.CustomJS(
+        args=dict(
+            cds=cds,
+            cascadeDepthSpinner=cascade_depth_spinner,
+            xTotSliders=xtot_sliders,
+            plotInf=plot_inf,
+        ),
+        code=js_code,
+    )
+
+    # Link sliders
+    for depth in xtot_sliders:
+        xtot_sliders[depth].js_on_change("value", callback)
+    cascade_depth_spinner.js_on_change("value", callback)
+
+    # Build layout
+    layout = bokeh.layouts.row(
+        bokeh.layouts.column(
+            bokeh.layouts.row(
+                bokeh.layouts.Spacer(width=20),
+                radio_button_group,
+            ),
+            bokeh.layouts.Spacer(height=15),
+            bokeh.layouts.row(
+                bokeh.layouts.column(plots["tf"], log_plots["tf"]),
+                bokeh.layouts.column(plots["gain"], log_plots["gain"]),
+            ),
+            bokeh.layouts.row(
+                bokeh.layouts.column(plots["deriv"], log_plots["deriv"]),
+                bokeh.layouts.column(plots["sens"], log_plots["sens"]),
+            ),
+        ),
+        bokeh.layouts.Spacer(width=50),
+        bokeh.layouts.column(
+            bokeh.layouts.Spacer(height=70),
+            cascade_depth_spinner,
+            bokeh.layouts.Spacer(height=20),
+            *tuple([xtot_sliders[str(depth)] for depth in range(1, 6)]),
+        ),
+    )
+
+    return layout
+
+
 def michaelis_menten_approx():
     def michaelis_menten_rhs(c, t, kappa, zeta):
         cs, ces, cp = c
