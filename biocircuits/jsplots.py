@@ -215,7 +215,7 @@ def phosphorylation_signal_cascade_22_14():
     # Control widgets
     radio_button_group = bokeh.models.RadioButtonGroup(
         labels=["log", "linear"],
-        active=0,
+        active=1,
         width=100,
     )
     xtot1_22_slider = bokeh.models.Slider(
