@@ -58,11 +58,18 @@ def addjs_jinja(*args):
     return template
 
 
-def bokeh_show(bokeh_object, filename=None, **save_kwargs):
+def bokeh_show(
+    bokeh_object,
+    filename=None,
+    use_html=False,
+    height=500,
+    width=500,
+    **save_kwargs,
+):
     """Show a bokeh_object by saving it as an HTML file and then using
-    IPython.HTML to display it in a notebook. This is used in place of
-    bokeh.io.show() when a custom Jinja template is needed, for example
-    when an external JavaScript library needs to be loaded.
+    IPython.display.HTML or IPython.display.IFrame to display it in a notebook.
+    This is used in place of bokeh.io.show() when a custom Jinja template is
+    needed, for example when an external JavaScript library needs to be loaded.
 
     Parameters
     ----------
@@ -72,6 +79,17 @@ def bokeh_show(bokeh_object, filename=None, **save_kwargs):
         If given, the HTML file is stored at the path specified.
         Otherwise it is stored as bokehplot_########.html, where the
         numbers are generated sequentially.
+    use_html : bool, default False
+        If True, use IPython.display.HTML to display the Bokeh object.
+        This will allow interactivity in the notebook, but not when
+        the notebook is rendered to HTML. If False, IPython.display.IFrame
+        is used to make display.
+    height : int, default 500
+        Height of the IFrame to use in the display. Ignored if use_html
+        is True.
+    width : int, default 500
+        Width of the IFrame to use in the display. Ignored if use_html
+        is True.
     save_kwargs : dict
         All other kwargs are passed to bokeh.io.save(). Most commonly,
         this will be a `template` kwarg containing a Jinja template.
@@ -113,7 +131,10 @@ def bokeh_show(bokeh_object, filename=None, **save_kwargs):
         bokeh_object, filename=filename, resources=resources, title=title, **save_kwargs
     )
 
-    return HTML(filename)
+    if use_html:
+        return HTML(filename)
+    else:
+        return IFrame(src=filename, width=width, height=height)
 
 
 def _ecdf_vals(data, formal=False, complementary=False):
